@@ -28,6 +28,7 @@ function normalizePhone(p) {
 }
 // Set NODE_ENV=production on Render to disable dev-only features
 const DEV = process.env.NODE_ENV !== 'production';
+const WELCOME_COINS = parseInt(process.env.WELCOME_COINS || '5', 10); // free coins for new users
 
 const auth = (req, res, next) => {
   const raw = req.headers.authorization || '';
@@ -150,10 +151,15 @@ app.post('/auth/verify-otp', async (req, res) => {
     const u = await pool.query(
       `insert into users(phone) values($1)
        on conflict(phone) do update set phone = excluded.phone
-       returning *`,
+       returning *, (xmax = 0) as inserted`,
       [phone]
     );
     const user = u.rows[0];
+    if (user.inserted && WELCOME_COINS > 0) {
+      const bal = await changeCoins(user.id, WELCOME_COINS, 'welcome bonus');
+      if (bal !== null) user.coins = bal;
+    }
+    delete user.inserted;
     const token = jwt.sign({ id: user.id, phone }, process.env.JWT_SECRET, {
       expiresIn: '30d',
     });
