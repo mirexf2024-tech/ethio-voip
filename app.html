@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -275,6 +275,19 @@ async function flushIce() {
   pendingIce = [];
 }
 
+// low-data mode: limit voice to ~16 kbps (about 0.12 MB per minute)
+async function limitBitrate() {
+  try {
+    pc.getSenders().forEach(function (sd) {
+      if (!sd.track || sd.track.kind !== 'audio') return;
+      var p = sd.getParameters();
+      if (!p.encodings || !p.encodings.length) p.encodings = [{}];
+      p.encodings[0].maxBitrate = 16000;
+      sd.setParameters(p).catch(function () {});
+    });
+  } catch (e) {}
+}
+
 function tick() {
   clearInterval(tickT);
   tickT = setInterval(function () {
@@ -352,6 +365,7 @@ function connect() {
     render(); tick();
     var offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
+    limitBitrate();
     socket.emit('webrtc:offer', {callId: S.call.id, sdp: pc.localDescription});
   });
 
@@ -360,6 +374,7 @@ function connect() {
     await pc.setRemoteDescription(d.sdp); await flushIce();
     var a = await pc.createAnswer();
     await pc.setLocalDescription(a);
+    limitBitrate();
     socket.emit('webrtc:answer', {callId: S.call.id, sdp: pc.localDescription});
   });
 
