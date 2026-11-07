@@ -3,7 +3,11 @@ const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const http = require('http');
+const path = require('path');
+const { Server } = require('socket.io');
 const { pool, init } = require('./db');
+const { setupCalls } = require('./calls');
 
 const app = express();
 app.use(cors());
@@ -57,6 +61,20 @@ async function changeCoins(userId, delta, reason) {
 
 app.get('/', (_, res) => res.send('Ethio VoIP API is running'));
 app.get('/health', (_, res) => res.json({ ok: true }));
+
+// Browser test page for calls (open /test on two phones)
+app.get('/test', (_, res) => res.sendFile(path.join(__dirname, 'test.html')));
+
+// STUN/TURN servers for calls. Add a TURN server later via ICE_SERVERS env (JSON)
+app.get('/ice', auth, (_, res) => {
+  let iceServers = [{ urls: 'stun:stun.l.google.com:19302' }];
+  try {
+    if (process.env.ICE_SERVERS) iceServers = JSON.parse(process.env.ICE_SERVERS);
+  } catch (e) {
+    console.error('ICE_SERVERS is not valid JSON');
+  }
+  res.json({ iceServers });
+});
 
 // ---------- AUTH ----------
 app.post('/auth/request-otp', async (req, res) => {
@@ -165,11 +183,13 @@ app.post('/wallet/dev-buy', auth, async (req, res) => {
   res.json({ coins: bal });
 });
 
-module.exports = { changeCoins }; // used later by call billing
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: '*' } });
+setupCalls(io, { pool, jwt, changeCoins, normalizePhone });
 
 init()
   .then(() => {
-    app.listen(process.env.PORT || 3000, '0.0.0.0', () =>
+    server.listen(process.env.PORT || 3000, '0.0.0.0', () =>
       console.log('API running')
     );
   })
