@@ -11,7 +11,7 @@ const { setupCalls } = require('./calls');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '300kb' }));
 
 const PHONE = /^\+251[79]\d{8}$/; // Ethio telecom 9..., Safaricom 7...
 const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
@@ -59,7 +59,27 @@ async function changeCoins(userId, delta, reason) {
   return r.rowCount ? r.rows[0].balance_after : null;
 }
 
-app.get('/', (_, res) => res.send('Ethio VoIP API is running'));
+// ---- the app itself (PWA) ----
+app.get('/', (_, res) => res.sendFile(path.join(__dirname, 'app.html')));
+app.get('/icon-192.png', (_, res) => res.sendFile(path.join(__dirname, 'icon-192.png')));
+app.get('/icon-512.png', (_, res) => res.sendFile(path.join(__dirname, 'icon-512.png')));
+app.get('/manifest.json', (_, res) =>
+  res.json({
+    name: 'Ethio Call',
+    short_name: 'Ethio Call',
+    start_url: '/',
+    display: 'standalone',
+    background_color: '#0f766e',
+    theme_color: '#0f766e',
+    icons: [
+      { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+    ],
+  })
+);
+app.get('/sw.js', (_, res) => {
+  res.type('application/javascript').send("self.addEventListener('fetch', function () {});");
+});
 app.get('/health', (_, res) => res.json({ ok: true }));
 
 // Browser test page for calls (open /test on two phones)
