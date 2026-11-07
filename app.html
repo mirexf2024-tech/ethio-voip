@@ -169,6 +169,7 @@ function callView() {
   return `<div class="ov"><div class="av">📞</div><div style="font-size:24px;font-weight:700">${esc(c.peer)}</div>
   <div>${inc ? t('incoming') : c.state === 'active' ? t('connected') : t('calling')}</div>
   <div id="clk" style="font-size:28px">${c.state === 'active' ? clock() : ''}</div>
+  <div class="s" style="color:#94a3b8">${c.ice ? 'network: ' + esc(c.ice) : ''}</div>
   ${inc ? `<button class="g" onclick="acceptCall()">${t('accept')}</button><button class="r" onclick="rejectCall()">${t('reject')}</button>`
         : `<button class="x" onclick="toggleMute()">${c.muted ? t('unmute') : t('mute')}</button><button class="r" onclick="hangup()">${t('end')}</button>`}</div>`;
 }
@@ -261,6 +262,9 @@ function mkPeer() {
   pc = new RTCPeerConnection({iceServers: iceServers});
   localStream.getTracks().forEach(function (tr) { pc.addTrack(tr, localStream); });
   pc.ontrack = function (e) { $('remote').srcObject = e.streams[0]; $('remote').play().catch(function () {}); };
+  pc.oniceconnectionstatechange = function () {
+    if (S.call && pc) { S.call.ice = pc.iceConnectionState; render(); }
+  };
   pc.onicecandidate = function (e) {
     if (e.candidate && S.call) socket.emit('webrtc:ice', {callId: S.call.id, candidate: e.candidate});
   };
