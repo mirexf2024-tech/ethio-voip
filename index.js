@@ -8,10 +8,11 @@ const path = require('path');
 const { Server } = require('socket.io');
 const { pool, init } = require('./db');
 const { setupCalls } = require('./calls');
+const { setupChat } = require('./chat');
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: '300kb' }));
+app.use(express.json({ limit: '3mb' }));
 
 const PHONE = /^\+251[79]\d{8}$/; // Ethio telecom 9..., Safaricom 7...
 const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
@@ -79,7 +80,13 @@ app.get('/manifest.json', (_, res) =>
   })
 );
 app.get('/sw.js', (_, res) => {
-  res.type('application/javascript').send("self.addEventListener('fetch', function () {});");
+  res.type('application/javascript').send(
+    "self.addEventListener('fetch', function () {});" +
+    "self.addEventListener('notificationclick', function (e) {" +
+    "e.notification.close();" +
+    "e.waitUntil(clients.matchAll({ type: 'window' }).then(function (l) {" +
+    "if (l.length) return l[0].focus(); return clients.openWindow('/'); }));});"
+  );
 });
 app.get('/health', (_, res) => res.json({ ok: true }));
 
@@ -177,10 +184,12 @@ app.get('/me', auth, async (req, res) => {
 });
 
 app.put('/profile', auth, async (req, res) => {
-  const { name, avatar_url } = req.body;
+  const { name, avatar_url, about } = req.body;
+  if (String(avatar_url || '').length > 60000)
+    return res.status(400).json({ error: 'Photo too large' });
   const r = await pool.query(
-    'update users set name=$2, avatar_url=$3 where id=$1 returning *',
-    [req.user.id, name, avatar_url]
+    'update users set name=$2, avatar_url=$3, about=$4 where id=$1 returning *',
+    [req.user.id, String(name || '').slice(0, 60), avatar_url, String(about || '').slice(0, 140)]
   );
   res.json(r.rows[0]);
 });
@@ -212,6 +221,7 @@ app.post('/wallet/dev-buy', auth, async (req, res) => {
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 setupCalls(io, { pool, jwt, changeCoins, normalizePhone });
+setupChat(app, io, { pool, auth, normalizePhone });
 
 init()
   .then(() => {

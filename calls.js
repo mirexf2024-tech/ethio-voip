@@ -76,6 +76,12 @@ function setupCalls(io, { pool, jwt, changeCoins, normalizePhone }) {
         if (callee.id === uid)
           return socket.emit('call:error', { message: 'You cannot call yourself' });
 
+        const bl = await pool.query(
+          'select 1 from blocks where (user_id=$1 and blocked_id=$2) or (user_id=$2 and blocked_id=$1)',
+          [uid, callee.id]
+        );
+        if (bl.rowCount) return socket.emit('call:error', { message: 'User is unavailable' });
+
         const me = await pool.query('select coins, name from users where id=$1', [uid]);
         if (me.rows[0].coins < COINS_PER_MINUTE)
           return socket.emit('call:error', { message: 'Not enough coins' });

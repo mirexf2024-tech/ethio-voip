@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -19,23 +19,41 @@ input,select{width:100%;font-size:17px;padding:12px;border:1px solid #d1d5db;bor
 button{font-size:17px;padding:13px;border:0;border-radius:10px;background:#0f766e;color:#fff;font-weight:600;width:100%;margin:6px 0}
 button.g{background:#16a34a}button.r{background:#dc2626}button.x{background:#e5e7eb;color:#111}
 .nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;display:flex;background:#fff;border-top:1px solid #e5e7eb;padding-bottom:env(safe-area-inset-bottom)}
-.nav div{flex:1;text-align:center;padding:10px 0;font-size:13px;color:#6b7280}
+.nav div{flex:1;text-align:center;padding:10px 0;font-size:12px;color:#6b7280;position:relative}
 .nav .on{color:#0f766e;font-weight:700}
+.nav .dot{position:absolute;top:4px;left:56%;background:#dc2626;color:#fff;border-radius:99px;font-size:11px;padding:1px 6px}
 .keys{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .keys button{background:#fff;color:#111;border:1px solid #e5e7eb;font-size:22px;margin:0}
 .num{font-size:26px;text-align:center;min-height:40px;letter-spacing:1px;word-break:break-all}
-.row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #f0f0f0}
 .row:last-child{border:0}
-.row button{width:auto;padding:8px 16px;margin:0}
+.row button{width:auto;padding:8px 16px;margin:0;flex:none}
+.row .s{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;max-width:60vw}
 .av{width:96px;height:96px;border-radius:50%;background:#99f6e4;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:38px;color:#0f766e;overflow:hidden}
 .av img{width:100%;height:100%;object-fit:cover}
+.av.sm{width:44px;height:44px;font-size:18px;margin:0;flex:none}
 .big{font-size:38px;font-weight:800;text-align:center}
 .s{font-size:13px;color:#6b7280}
 .c{text-align:center}
+.badge{background:#dc2626;color:#fff;border-radius:99px;padding:2px 8px;font-size:12px;flex:none}
 .ov{position:fixed;inset:0;background:#0f172a;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;z-index:9}
 .ov button{max-width:320px}
 .toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 16px;border-radius:10px;z-index:20;max-width:90%}
 .ban{background:#f59e0b;color:#000;text-align:center;font-size:13px;padding:4px}
+.chatv{position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#e5ddd5;display:flex;flex-direction:column;z-index:5}
+.chatv .top span{cursor:pointer}
+.msgs{flex:1;overflow-y:auto;padding:10px}
+.mr{display:flex;justify-content:flex-start}
+.mr.me{justify-content:flex-end}
+.b{max-width:82%;padding:8px 10px;border-radius:12px;margin:3px 0;background:#fff;word-wrap:break-word;overflow-wrap:anywhere;white-space:pre-wrap}
+.mr.me .b{background:#d9fdd3}
+.pic{max-width:100%;max-height:260px;border-radius:8px;display:block}
+.ph{padding:30px 20px;background:#eee;border-radius:8px;text-align:center;color:#555}
+.pl{background:#0f766e;font-size:15px;padding:8px 14px;width:auto;margin:0}
+.comp{display:flex;gap:6px;align-items:center;padding:8px;background:#f0f0f0;padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+.comp input{margin:0;flex:1;min-width:0}
+.comp button{width:auto;margin:0;padding:11px 14px;flex:none}
+.ic{font-size:24px;padding:4px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -44,14 +62,17 @@ button.g{background:#16a34a}button.r{background:#dc2626}button.x{background:#e5e
 <script src="/socket.io/socket.io.js"></script>
 <script>
 var T = {
-  en: {phone:`Phone number`,getCode:`Get code`,code:`Code`,login:`Login`,calls:`Calls`,wallet:`Wallet`,profile:`Profile`,call:`Call`,recent:`Recent`,balance:`Your coins`,packages:`Packages`,buy:`Buy`,history:`History`,name:`Name`,save:`Save`,logout:`Log out`,photo:`Change photo`,rate:`1 coin per minute`,incoming:`Incoming call`,calling:`Calling...`,connected:`Connected`,mute:`Mute`,unmute:`Unmute`,end:`End`,accept:`Accept`,reject:`Reject`,testBuy:`(free test)`,offline:`Connecting to server...`,saved:`Saved`,mic:`Please allow the microphone`},
-  om: {phone:`Lakkoofsa bilbilaa`,getCode:`Koodii fudhadhu`,code:`Koodii`,login:`Seeni`,calls:`Bilbila`,wallet:`Korkoroo`,profile:`Profaayilii`,call:`Bilbili`,recent:`Dhiyeenya`,balance:`Koyinii kee`,packages:`Paakeejii`,buy:`Bitadhu`,history:`Seenaa`,name:`Maqaa`,save:`Olkaa'i`,logout:`Ba'i`,photo:`Suuraa jijjiiri`,rate:`Daqiiqaa tokkoof koyinii 1`,incoming:`Bilbilli dhufaa jira`,calling:`Bilbilaa jira...`,connected:`Wal qabateera`,mute:`Cufi`,unmute:`Banii`,end:`Xumuri`,accept:`Fudhadhu`,reject:`Dhiisi`,testBuy:`(yaalii bilisaa)`,offline:`Sarvaratti hidhamaa jira...`,saved:`Olkaa'ameera`,mic:`Maayikiroofonii eeyyami`},
-  am: {phone:`ስልክ ቁጥር`,getCode:`ኮድ ላክ`,code:`ኮድ`,login:`ግባ`,calls:`ጥሪ`,wallet:`ቦርሳ`,profile:`መገለጫ`,call:`ደውል`,recent:`የቅርብ ጊዜ`,balance:`ሳንቲሞችህ`,packages:`ጥቅሎች`,buy:`ግዛ`,history:`ታሪክ`,name:`ስም`,save:`አስቀምጥ`,logout:`ውጣ`,photo:`ፎቶ ቀይር`,rate:`በደቂቃ 1 ሳንቲም`,incoming:`ገቢ ጥሪ`,calling:`በመደወል ላይ...`,connected:`ተገናኝቷል`,mute:`ድምጽ አጥፋ`,unmute:`ድምጽ አብራ`,end:`ጨርስ`,accept:`ተቀበል`,reject:`ውድቅ አድርግ`,testBuy:`(ነፃ ሙከራ)`,offline:`ከአገልጋይ ጋር በመገናኘት ላይ...`,saved:`ተቀምጧል`,mic:`ማይክሮፎን ይፍቀዱ`}
+  en: {phone:`Phone number`,getCode:`Get code`,code:`Code`,login:`Login`,calls:`Calls`,wallet:`Wallet`,chats:`Chats`,settings:`Settings`,call:`Call`,recent:`Recent`,balance:`Your coins`,packages:`Packages`,buy:`Buy`,history:`History`,name:`Name`,aboutMe:`About me`,save:`Save`,logout:`Log out`,photo:`Change photo`,rate:`1 coin per minute`,incoming:`Incoming call`,calling:`Calling...`,connected:`Connected`,mute:`Mute`,unmute:`Unmute`,end:`End`,accept:`Accept`,reject:`Reject`,testBuy:`(free test)`,offline:`Connecting to server...`,saved:`Saved`,mic:`Please allow the microphone`,newChat:`Phone number to chat`,start:`Start`,typeMsg:`Type a message`,tapLoad:`Tap to load photo`,blockq:`Block this person?`,blocked:`Blocked`,unblock:`Unblock`,blockedUsers:`Blocked people`,notifs:`Notifications`,enable:`Enable`,on:`On`,off:`Off`,sound:`Ringtone & sounds`,vibrate:`Vibration`,saver:`Data saver (lower voice quality, tap to load photos)`,clearRecent:`Clear recent calls`,delAcc:`Delete my account`,delq:`Delete your account and all messages? This cannot be undone.`,delq2:`Are you sure?`,aboutApp:`About`,language:`Language`,account:`Account`,tooBig:`File is too big (max 1 MB)`,voice:`Voice message`,photoWord:`Photo`,fileWord:`File`,nobody:`No chats yet`,notifHint:`Alerts only while the app is open or in the background`,sending:`Sending...`},
+  om: {phone:`Lakkoofsa bilbilaa`,getCode:`Koodii fudhadhu`,code:`Koodii`,login:`Seeni`,calls:`Bilbila`,wallet:`Korkoroo`,chats:`Dubbii`,settings:`Qindaa'ina`,call:`Bilbili`,recent:`Dhiyeenya`,balance:`Koyinii kee`,packages:`Paakeejii`,buy:`Bitadhu`,history:`Seenaa`,name:`Maqaa`,aboutMe:`Waa'ee koo`,save:`Olkaa'i`,logout:`Ba'i`,photo:`Suuraa jijjiiri`,rate:`Daqiiqaa tokkoof koyinii 1`,incoming:`Bilbilli dhufaa jira`,calling:`Bilbilaa jira...`,connected:`Wal qabateera`,mute:`Cufi`,unmute:`Banii`,end:`Xumuri`,accept:`Fudhadhu`,reject:`Dhiisi`,testBuy:`(yaalii bilisaa)`,offline:`Sarvaratti hidhamaa jira...`,saved:`Olkaa'ameera`,mic:`Maayikiroofonii eeyyami`,newChat:`Lakkoofsa bilbilaa`,start:`Jalqabi`,typeMsg:`Ergaa barreessi`,tapLoad:`Suuraa banuuf tuqi`,blockq:`Nama kana dhoorkuu?`,blocked:`Dhoorkameera`,unblock:`Hiikuu`,blockedUsers:`Namoota dhoorkaman`,notifs:`Beeksisa`,enable:`Banii`,on:`Banaa`,off:`Cufaa`,sound:`Sagalee waca`,vibrate:`Hoosisuu (vibration)`,saver:`Data qusachuu (sagalee xiqqaa, suuraa tuqaan)`,clearRecent:`Bilbila dhiyoo haqi`,delAcc:`Akaawuntii koo haqi`,delq:`Akaawuntii fi ergaa hunda haquu? Kun deebi'ee hin dhufu.`,delq2:`Mirkaneeffattaa?`,aboutApp:`Waa'ee`,language:`Afaan`,account:`Akaawuntii`,tooBig:`Faayilli ulfaataadha (isa guddaan 1 MB)`,voice:`Ergaa sagalee`,photoWord:`Suuraa`,fileWord:`Faayila`,nobody:`Ergaan hin jiru`,notifHint:`Beeksisni yeroo aappiin banaa ykn duubatti jiru qofa dhufa`,sending:`Ergaa jira...`},
+  am: {phone:`ስልክ ቁጥር`,getCode:`ኮድ ላክ`,code:`ኮድ`,login:`ግባ`,calls:`ጥሪ`,wallet:`ቦርሳ`,chats:`ውይይት`,settings:`ቅንብሮች`,call:`ደውል`,recent:`የቅርብ ጊዜ`,balance:`ሳንቲሞችህ`,packages:`ጥቅሎች`,buy:`ግዛ`,history:`ታሪክ`,name:`ስም`,aboutMe:`ስለ እኔ`,save:`አስቀምጥ`,logout:`ውጣ`,photo:`ፎቶ ቀይር`,rate:`በደቂቃ 1 ሳንቲም`,incoming:`ገቢ ጥሪ`,calling:`በመደወል ላይ...`,connected:`ተገናኝቷል`,mute:`ድምጽ አጥፋ`,unmute:`ድምጽ አብራ`,end:`ጨርስ`,accept:`ተቀበል`,reject:`ውድቅ አድርግ`,testBuy:`(ነፃ ሙከራ)`,offline:`ከአገልጋይ ጋር በመገናኘት ላይ...`,saved:`ተቀምጧል`,mic:`ማይክሮፎን ይፍቀዱ`,newChat:`ስልክ ቁጥር`,start:`ጀምር`,typeMsg:`መልእክት ይጻፉ`,tapLoad:`ፎቶ ለመክፈት ይንኩ`,blockq:`ይህን ሰው ልከልክል?`,blocked:`ታግዷል`,unblock:`አንሳ`,blockedUsers:`የታገዱ ሰዎች`,notifs:`ማሳወቂያዎች`,enable:`አብራ`,on:`በርቷል`,off:`ጠፍቷል`,sound:`የጥሪ ድምጽ`,vibrate:`ንዝረት`,saver:`ዳታ ቆጣቢ (ዝቅተኛ የድምጽ ጥራት፣ ፎቶ በመንካት)`,clearRecent:`የቅርብ ጥሪዎችን ሰርዝ`,delAcc:`መለያዬን ሰርዝ`,delq:`መለያዎን እና ሁሉንም መልእክቶች ይሰርዙ? ይህ አይመለስም።`,delq2:`እርግጠኛ ነዎት?`,aboutApp:`ስለ`,language:`ቋንቋ`,account:`መለያ`,tooBig:`ፋይሉ በጣም ትልቅ ነው (ከፍተኛ 1 MB)`,voice:`የድምጽ መልእክት`,photoWord:`ፎቶ`,fileWord:`ፋይል`,nobody:`ገና ውይይት የለም`,notifHint:`ማሳወቂያ መተግበሪያው ክፍት ወይም ከበስተጀርባ ሲሆን ብቻ ነው`,sending:`በመላክ ላይ...`}
 };
 var S = {lang: localStorage.getItem('lg') || 'om', token: localStorage.getItem('tk'), me: null, coins: 0, hist: [], pkgs: [],
-  tab: 'calls', dial: '', call: null, online: false, msg: '', loading: false, otpSent: false, devCode: '', photo: null};
+  chats: [], chat: null, blocks: [], recording: false, stick: false, set: {sound: true, vibrate: true, saver: true},
+  tab: 'chats', dial: '', call: null, online: false, msg: '', loading: false, otpSent: false, devCode: '', photo: null};
+try { Object.assign(S.set, JSON.parse(localStorage.getItem('st') || '{}')); } catch (e) {}
 var socket = null, pc = null, localStream = null, pendingIce = [], iceServers = [{urls: 'stun:stun.l.google.com:19302'}];
-var tickT = null, ringT = null, actx = null;
+var tickT = null, ringT = null, actx = null, M = {}, curAudio = null;
+var VR = {mr: null, chunks: [], t0: 0, timer: null, stream: null, cancel: false};
 
 var $ = function (id) { return document.getElementById(id); };
 var t = function (k) { return (T[S.lang] && T[S.lang][k]) || T.en[k] || k; };
@@ -60,6 +81,7 @@ var esc = function (s) {
     return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
   });
 };
+var safeName = function (n) { return String(n || 'file').replace(/[^\w.\- ]/g, '_'); };
 
 async function api(p, m, b) {
   try {
@@ -76,33 +98,48 @@ function toast(m) {
 }
 function go(tab) { S.tab = tab; render(); }
 function setLang(l) { S.lang = l; localStorage.setItem('lg', l); render(); }
+function tog(k) { S.set[k] = !S.set[k]; try { localStorage.setItem('st', JSON.stringify(S.set)); } catch (e) {} render(); }
 
-/* ---------- ringtone (free, made in the browser) ---------- */
+/* ---------- sounds & notifications ---------- */
 function unlock() {
   if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
   if (actx && actx.state === 'suspended') actx.resume();
 }
 document.addEventListener('click', unlock);
-function beep() {
+function beep(len) {
   if (!actx) return;
   var o = actx.createOscillator(), g = actx.createGain();
   o.frequency.value = 440; g.gain.value = 0.15;
   o.connect(g); g.connect(actx.destination);
-  o.start(); o.stop(actx.currentTime + 0.4);
+  o.start(); o.stop(actx.currentTime + (len || 0.4));
 }
+function buzz(ms) { if (S.set.vibrate && navigator.vibrate) navigator.vibrate(ms); }
 function ringStart() {
-  ringStop(); beep();
-  ringT = setInterval(function () { beep(); if (navigator.vibrate) navigator.vibrate(300); }, 1500);
+  ringStop();
+  if (S.set.sound) beep();
+  ringT = setInterval(function () { if (S.set.sound) beep(); buzz(300); }, 1500);
 }
 function ringStop() { clearInterval(ringT); ringT = null; }
+function notify(title, body) {
+  if (!document.hidden || !('Notification' in window) || Notification.permission !== 'granted') return;
+  navigator.serviceWorker.ready.then(function (r) {
+    r.showNotification(title, {body: body, icon: '/icon-192.png', tag: 'ethio'});
+  }).catch(function () { try { new Notification(title, {body: body}); } catch (e) {} });
+}
+async function askNotif() {
+  if (!('Notification' in window)) return toast('Not supported');
+  var p = await Notification.requestPermission();
+  toast(p === 'granted' ? t('on') : t('off'));
+}
 
-/* ---------- recent calls (saved on the phone) ---------- */
+/* ---------- recent calls ---------- */
 function getRec() { try { return JSON.parse(localStorage.getItem('rec') || '[]'); } catch (e) { return []; } }
 function addRecent(phone, dir) {
   var r = getRec().filter(function (x) { return x.phone !== phone; });
   r.unshift({phone: phone, dir: dir, ts: Date.now()});
   try { localStorage.setItem('rec', JSON.stringify(r.slice(0, 15))); } catch (e) {}
 }
+function clearRec() { localStorage.removeItem('rec'); render(); }
 
 /* ---------- screens ---------- */
 function langSel() {
@@ -117,6 +154,28 @@ function loginView() {
   ${S.otpSent ? `<input id="cd" type="tel" placeholder="${t('code')}" value="${esc(S.d_cd != null ? S.d_cd : S.devCode)}">
   <button class="g" onclick="doLogin()">${t('login')}</button>` : ''}
   </div></div>`;
+}
+
+function avatar(url, label, cls) {
+  return `<div class="av ${cls || ''}">${url ? `<img src="${esc(url)}">` : esc(label)}</div>`;
+}
+
+function preview(c) {
+  if (c.kind === 'image') return '📷 ' + t('photoWord');
+  if (c.kind === 'voice') return '🎤 ' + t('voice');
+  if (c.kind === 'file') return '📎 ' + esc(c.media_name || t('fileWord'));
+  return esc((c.body || '').slice(0, 50));
+}
+
+function chatsTab() {
+  return `<div class="card"><input id="nc" type="tel" placeholder="${t('newChat')}" value="${esc(S.d_nc || '')}">
+  <button onclick="newChat()">${t('start')}</button></div>
+  <div class="card">${S.chats.map(function (c) {
+    return `<div class="row" onclick="openChat('${esc(c.phone)}')"><span style="display:flex;gap:10px;align-items:center;min-width:0">
+    ${avatar(c.avatar_url, (c.name || '#')[0].toUpperCase(), 'sm')}
+    <span style="min-width:0"><b>${esc(c.name || c.phone)}</b><br><span class="s">${preview(c)}</span></span></span>
+    ${c.unread ? `<span class="badge">${c.unread}</span>` : ''}</div>`;
+  }).join('') || `<div class="s c">${t('nobody')}</div>`}</div>`;
 }
 
 function callsTab() {
@@ -141,22 +200,91 @@ function walletTab() {
   }).join('') || '<div class="s">—</div>'}</div>`;
 }
 
-function profileTab() {
+function settingsTab() {
   var m = S.me, ph = S.photo || m.avatar_url, nm = S.d_nm != null ? S.d_nm : (m.name || '');
-  return `<div class="card"><div class="av">${ph ? `<img src="${esc(ph)}">` : esc(nm ? nm[0].toUpperCase() : '👤')}</div>
+  var ab = S.d_ab != null ? S.d_ab : (m.about || '');
+  var np = ('Notification' in window) ? Notification.permission : 'unsupported';
+  var tg = function (k, label) {
+    return `<div class="row"><span>${label}</span><button class="${S.set[k] ? '' : 'x'}" onclick="tog('${k}')">${S.set[k] ? t('on') : t('off')}</button></div>`;
+  };
+  return `<div class="card">${avatar(ph, nm ? nm[0].toUpperCase() : '👤')}
   <label class="s c" style="display:block"><input type="file" accept="image/*" style="display:none" onchange="pickPhoto(this)"><u>📷 ${t('photo')}</u></label>
-  <input id="nm" placeholder="${t('name')}" value="${esc(nm)}">
+  <input id="nm" placeholder="${t('name')}" maxlength="60" value="${esc(nm)}">
+  <input id="ab" placeholder="${t('aboutMe')}" maxlength="140" value="${esc(ab)}">
   <div class="s c">${esc(m.phone)}</div>
   <button onclick="saveProfile()">${t('save')}</button></div>
-  <div class="card">${langSel()}<button class="x" onclick="logout()">${t('logout')}</button></div>`;
+  <div class="card"><b>${t('language')}</b>${langSel()}</div>
+  <div class="card"><b>${t('calls')}</b>${tg('sound', t('sound'))}${tg('vibrate', t('vibrate'))}${tg('saver', t('saver'))}</div>
+  <div class="card"><b>${t('notifs')}</b><div class="row"><span class="s">${esc(np)}</span>${np === 'granted' || np === 'unsupported' ? '' : `<button onclick="askNotif()">${t('enable')}</button>`}</div>
+  <div class="s">${t('notifHint')}</div></div>
+  <div class="card"><b>${t('blockedUsers')}</b>${S.blocks.map(function (b) {
+    return `<div class="row"><span>${esc(b.name || b.phone)}</span><button class="x" onclick="unblock('${esc(b.phone)}')">${t('unblock')}</button></div>`;
+  }).join('') || '<div class="s">—</div>'}</div>
+  <div class="card"><b>${t('account')}</b>
+  <button class="x" onclick="clearRec()">${t('clearRecent')}</button>
+  <button class="x" onclick="logout()">${t('logout')}</button>
+  <button class="r" onclick="delAcc()">${t('delAcc')}</button></div>
+  <div class="card s c">${t('aboutApp')}: Ethio Call v1.1 · ${t('rate')}</div>`;
 }
 
 function mainView() {
-  var b = S.tab === 'calls' ? callsTab() : S.tab === 'wallet' ? walletTab() : profileTab();
-  var items = [['calls', '📞'], ['wallet', '🪙'], ['profile', '👤']];
+  var b = S.tab === 'chats' ? chatsTab() : S.tab === 'calls' ? callsTab() : S.tab === 'wallet' ? walletTab() : settingsTab();
+  var unread = S.chats.reduce(function (a, c) { return a + (c.unread || 0); }, 0);
+  var items = [['chats', '💬'], ['calls', '📞'], ['wallet', '🪙'], ['settings', '⚙️']];
   return (S.online ? '' : `<div class="ban">${t('offline')}</div>`) +
     `<div class="top"><span>Ethio Call</span><span class="pill">🪙 ${S.coins}</span></div><div class="pg">${b}</div>` +
-    `<div class="nav">${items.map(function (i) { return `<div class="${S.tab === i[0] ? 'on' : ''}" onclick="go('${i[0]}')">${i[1]}<br>${t(i[0])}</div>`; }).join('')}</div>`;
+    `<div class="nav">${items.map(function (i) {
+      return `<div class="${S.tab === i[0] ? 'on' : ''}" onclick="go('${i[0]}')">${i[1]}${i[0] === 'chats' && unread ? `<span class="dot">${unread}</span>` : ''}<br>${t(i[0])}</div>`;
+    }).join('')}</div>`;
+}
+
+/* ---------- chat screen ---------- */
+function fmtDur(s) { s = Math.round(s || 0); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+
+function msgsHtml() {
+  return S.chat.messages.map(function (m) {
+    var inner = '';
+    if (m.kind === 'text') inner = esc(m.body);
+    else if (m.kind === 'image') {
+      inner = M[m.id] ? `<img class="pic" src="${M[m.id]}" onclick="window.open(M[${m.id}])">`
+        : S.set.saver ? `<div class="ph" onclick="loadImg(${m.id})">📷 ${t('tapLoad')}</div>`
+        : `<img class="pic" data-mid="${m.id}">`;
+    } else if (m.kind === 'voice') inner = `<button class="pl" onclick="playV(${m.id})">▶ 🎤 ${fmtDur(m.duration)}</button>`;
+    else inner = `<a href="#" onclick="dl(${m.id},'${safeName(m.media_name)}');return false">📎 ${esc(m.media_name || t('fileWord'))}</a>`;
+    var tm = new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+    var tick = m.mine ? (m.read_at ? ' ✓✓' : ' ✓') : '';
+    return `<div class="mr ${m.mine ? 'me' : ''}"><div class="b">${inner}<div class="s" style="text-align:right">${tm}${tick}</div></div></div>`;
+  }).join('');
+}
+
+function composer() {
+  if (S.recording) {
+    return `<div class="comp"><span style="flex:1;padding:10px">🔴 <span id="rt">0:00</span></span>
+    <button class="x" onclick="voiceStop(true)">✖</button><button onclick="voiceStop(false)">➤</button></div>`;
+  }
+  return `<div class="comp">
+  <label class="ic">📎<input type="file" style="display:none" onchange="pickFile(this,'file')"></label>
+  <label class="ic">📷<input type="file" accept="image/*" style="display:none" onchange="pickFile(this,'image')"></label>
+  <input id="mi" placeholder="${t('typeMsg')}" value="${esc(S.d_mi || '')}" onkeydown="if(event.key==='Enter')sendText()">
+  <button onclick="sendText()">➤</button><button class="x" onclick="voiceStart()">🎤</button></div>`;
+}
+
+function chatView() {
+  var c = S.chat;
+  return `<div class="chatv"><div class="top"><span onclick="closeChat()" style="font-size:22px;padding-right:12px">←</span>
+  <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name || c.phone)}<br><span class="s" style="color:#d1fae5;font-weight:400">${esc(c.about || '')}</span></span>
+  <span onclick="callFromChat()" style="font-size:22px;padding:0 12px">📞</span><span onclick="blockPeer()" style="font-size:20px">🚫</span></div>
+  <div id="msgs" class="msgs">${msgsHtml()}</div>${composer()}</div>`;
+}
+
+function hydrate(im) { getMedia(im.dataset.mid).then(function (u) { im.src = u; }).catch(function () {}); }
+
+function renderMsgs() {
+  var b = $('msgs'); if (!b || !S.chat) return;
+  var atEnd = b.scrollHeight - b.scrollTop - b.clientHeight < 100;
+  b.innerHTML = msgsHtml();
+  b.querySelectorAll('img[data-mid]').forEach(hydrate);
+  if (atEnd || S.stick) { b.scrollTop = b.scrollHeight; S.stick = false; }
 }
 
 function clock() {
@@ -174,15 +302,29 @@ function callView() {
         : `<button class="x" onclick="toggleMute()">${c.muted ? t('unmute') : t('mute')}</button><button class="r" onclick="hangup()">${t('end')}</button>`}</div>`;
 }
 
+var DRAFTS = ['ph', 'cd', 'nm', 'ab', 'mi', 'nc'];
 function render() {
-  ['ph', 'cd', 'nm'].forEach(function (i) { var e = $(i); if (e) S['d_' + i] = e.value; });
+  DRAFTS.forEach(function (i) { var e = $(i); if (e) S['d_' + i] = e.value; });
+  var af = document.activeElement && document.activeElement.id;
+  var b0 = $('msgs'), keep = b0 ? b0.scrollTop : 0;
+  var atEnd = b0 ? (b0.scrollHeight - b0.scrollTop - b0.clientHeight < 100) : true;
   var h = S.loading ? '<div class="c" style="padding-top:30vh;font-size:20px">Ethio Call...</div>' : !S.me ? loginView() : mainView();
+  if (S.me && S.chat) h += chatView();
   if (S.call) h += callView();
   if (S.msg) h += `<div class="toast">${esc(S.msg)}</div>`;
   $('app').innerHTML = h;
+  var nb = $('msgs');
+  if (nb) {
+    nb.scrollTop = (S.stick || atEnd) ? nb.scrollHeight : keep; S.stick = false;
+    nb.querySelectorAll('img[data-mid]').forEach(hydrate);
+  }
+  if (af && DRAFTS.indexOf(af) > -1 && $(af)) {
+    var e = $(af); e.focus();
+    try { e.setSelectionRange(e.value.length, e.value.length); } catch (x) {}
+  }
 }
 
-/* ---------- login / profile / wallet actions ---------- */
+/* ---------- login / profile / wallet ---------- */
 async function sendCode() {
   var p = $('ph').value;
   var r = await api('/auth/request-otp', 'POST', {phone: p});
@@ -202,12 +344,27 @@ function logout() {
   localStorage.removeItem('tk');
   if (socket) socket.close();
   S.token = null; S.me = null; S.otpSent = false; S.loading = false; S.online = false;
+  S.chat = null; S.chats = []; S.blocks = []; S.call = null;
   render();
+}
+
+async function delAcc() {
+  if (!confirm(t('delq')) || !confirm(t('delq2'))) return;
+  var r = await api('/account', 'DELETE');
+  if (r.ok) { localStorage.clear(); logout(); } else toast(r.error || 'Error');
 }
 
 async function loadWallet() {
   var r = await api('/wallet');
   if (r.coins !== undefined) { S.coins = r.coins; S.hist = r.history || []; }
+}
+async function loadChats() {
+  var r = await api('/chats');
+  if (Array.isArray(r)) { S.chats = r; if (!S.chat) render(); }
+}
+async function loadBlocks() {
+  var r = await api('/blocks');
+  if (Array.isArray(r)) S.blocks = r;
 }
 
 async function buy(id) {
@@ -230,9 +387,9 @@ function pickPhoto(inp) {
 }
 
 async function saveProfile() {
-  var r = await api('/profile', 'PUT', {name: $('nm').value, avatar_url: S.photo || S.me.avatar_url || null});
+  var r = await api('/profile', 'PUT', {name: $('nm').value, about: $('ab').value, avatar_url: S.photo || S.me.avatar_url || null});
   if (!r.id) return toast(r.error || 'Error');
-  S.me = r; S.photo = null; S.d_nm = null;
+  S.me = r; S.photo = null; S.d_nm = null; S.d_ab = null;
   toast(t('saved'));
 }
 
@@ -240,11 +397,135 @@ async function boot() {
   var me = await api('/me');
   if (!me || !me.id) { S.loading = false; return me && me.error === 'Network error' ? (S.msg = me.error, render()) : logout(); }
   S.me = me;
-  await Promise.all([loadWallet(), api('/packages').then(function (p) { if (Array.isArray(p)) S.pkgs = p; }),
+  await Promise.all([loadWallet(), loadBlocks(),
+    api('/chats').then(function (c) { if (Array.isArray(c)) S.chats = c; }),
+    api('/packages').then(function (p) { if (Array.isArray(p)) S.pkgs = p; }),
     api('/ice').then(function (i) { if (i.iceServers) iceServers = i.iceServers; })]);
   S.loading = false;
   connect();
   render();
+}
+
+/* ---------- messages ---------- */
+async function getMedia(id) {
+  if (M[id]) return M[id];
+  var r = await fetch('/messages/media/' + id, {headers: {Authorization: 'Bearer ' + S.token}});
+  if (!r.ok) throw new Error('media');
+  M[id] = URL.createObjectURL(await r.blob());
+  return M[id];
+}
+async function loadImg(id) { try { await getMedia(id); renderMsgs(); } catch (e) { toast('Error'); } }
+async function playV(id) {
+  try {
+    var u = await getMedia(id);
+    if (curAudio) curAudio.pause();
+    curAudio = new Audio(u); curAudio.play();
+  } catch (e) { toast('Error'); }
+}
+async function dl(id, name) {
+  try {
+    var u = await getMedia(id);
+    var a = document.createElement('a'); a.href = u; a.download = name || 'file';
+    document.body.appendChild(a); a.click(); a.remove();
+  } catch (e) { toast('Error'); }
+}
+
+async function openChat(phone) {
+  var r = await api('/messages/' + encodeURIComponent(phone));
+  if (!r.peer) return toast(r.error || 'Error');
+  S.chat = {phone: r.peer.phone, name: r.peer.name, about: r.peer.about, messages: r.messages};
+  S.d_mi = ''; S.stick = true; render(); loadChats();
+}
+function newChat() { var v = $('nc').value; S.d_nc = ''; if (v) openChat(v); }
+function closeChat() { S.chat = null; render(); loadChats(); }
+function callFromChat() { S.dial = S.chat.phone; S.chat = null; render(); startCall(); }
+
+async function blockPeer() {
+  if (!confirm(t('blockq'))) return;
+  var r = await api('/block', 'POST', {phone: S.chat.phone, block: true});
+  if (!r.ok) return toast(r.error || 'Error');
+  S.chat = null; await loadBlocks(); render(); toast(t('blocked'));
+}
+async function unblock(p) { await api('/block', 'POST', {phone: p, block: false}); await loadBlocks(); render(); }
+
+async function postMsg(payload, blob) {
+  var r = await api('/messages/send', 'POST', Object.assign({to: S.chat.phone}, payload));
+  if (!r.ok) return toast(r.error || 'Error');
+  if (blob) M[r.msg.id] = URL.createObjectURL(blob);
+  S.chat.messages.push(Object.assign({mine: true}, r.msg));
+  S.stick = true; renderMsgs(); loadChats();
+}
+
+function sendText() {
+  var e = $('mi'); if (!e) return;
+  var v = e.value.trim(); if (!v) return;
+  e.value = ''; S.d_mi = '';
+  postMsg({kind: 'text', body: v});
+}
+
+function toDataURL(b) {
+  return new Promise(function (res, rej) {
+    var f = new FileReader(); f.onload = function () { res(f.result); }; f.onerror = rej; f.readAsDataURL(b);
+  });
+}
+
+function compressImage(f) {
+  return new Promise(function (res, rej) {
+    var img = new Image();
+    img.onload = function () {
+      var s = Math.min(1, 1280 / Math.max(img.width, img.height));
+      var c = document.createElement('canvas');
+      c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      c.toBlob(function (b) { b ? res(b) : rej(new Error('img')); }, 'image/jpeg', 0.7);
+      URL.revokeObjectURL(img.src);
+    };
+    img.onerror = rej; img.src = URL.createObjectURL(f);
+  });
+}
+
+async function pickFile(inp, kind) {
+  var f = inp.files[0]; inp.value = ''; if (!f) return;
+  try {
+    var blob = f, k = 'file';
+    if (kind === 'image' && f.type.indexOf('image/') === 0) { blob = await compressImage(f); k = 'image'; }
+    if (blob.size > 1000000) return toast(t('tooBig'));
+    toast(t('sending'));
+    await postMsg({kind: k, data: await toDataURL(blob), name: f.name, size: blob.size}, blob);
+  } catch (e) { toast('Error'); }
+}
+
+async function voiceStart() {
+  if (S.call) return toast(t('mic'));
+  try { VR.stream = await navigator.mediaDevices.getUserMedia({audio: true}); }
+  catch (e) { return toast(t('mic')); }
+  var mt = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm'].find(function (m) {
+    return window.MediaRecorder && MediaRecorder.isTypeSupported(m);
+  });
+  var opts = {audioBitsPerSecond: 24000}; if (mt) opts.mimeType = mt;
+  VR.mr = new MediaRecorder(VR.stream, opts);
+  VR.chunks = []; VR.cancel = false;
+  VR.mr.ondataavailable = function (e) { if (e.data && e.data.size) VR.chunks.push(e.data); };
+  VR.mr.onstop = async function () {
+    VR.stream.getTracks().forEach(function (tr) { tr.stop(); });
+    clearInterval(VR.timer); S.recording = false;
+    var secs = (Date.now() - VR.t0) / 1000;
+    render();
+    if (VR.cancel || !VR.chunks.length || !S.chat) return;
+    var blob = new Blob(VR.chunks, {type: VR.mr.mimeType || 'audio/webm'});
+    if (blob.size > 1000000) return toast(t('tooBig'));
+    await postMsg({kind: 'voice', data: await toDataURL(blob), size: blob.size, duration: Math.round(secs)}, blob);
+  };
+  VR.mr.start(); VR.t0 = Date.now(); S.recording = true; render();
+  VR.timer = setInterval(function () {
+    var e = $('rt'), ms = Date.now() - VR.t0;
+    if (e) e.textContent = fmtDur(ms / 1000);
+    if (ms > 120000) voiceStop(false);
+  }, 500);
+}
+function voiceStop(cancel) {
+  VR.cancel = !!cancel;
+  if (VR.mr && VR.mr.state !== 'inactive') VR.mr.stop();
 }
 
 /* ---------- calling ---------- */
@@ -275,14 +556,14 @@ async function flushIce() {
   pendingIce = [];
 }
 
-// low-data mode: limit voice to ~16 kbps (about 0.12 MB per minute)
-async function limitBitrate() {
+// low-data mode: ~16 kbps voice (about 0.12 MB per minute); otherwise 32 kbps
+function limitBitrate() {
   try {
     pc.getSenders().forEach(function (sd) {
       if (!sd.track || sd.track.kind !== 'audio') return;
       var p = sd.getParameters();
       if (!p.encodings || !p.encodings.length) p.encodings = [{}];
-      p.encodings[0].maxBitrate = 16000;
+      p.encodings[0].maxBitrate = S.set.saver ? 16000 : 32000;
       sd.setParameters(p).catch(function () {});
     });
   } catch (e) {}
@@ -351,12 +632,34 @@ function connect() {
   socket.on('disconnect', function () { S.online = false; if (S.call) cleanup(); else render(); });
   socket.on('connect_error', function () { S.online = false; render(); });
 
+  // messages
+  socket.on('msg:new', function (m) {
+    if (S.chat && S.chat.phone === m.from_phone) {
+      S.chat.messages.push(Object.assign({mine: false}, m));
+      socket.emit('msg:read', {phone: m.from_phone});
+      renderMsgs();
+    } else {
+      if (S.set.sound) beep(0.15);
+      buzz(100);
+    }
+    if (document.hidden) notify(m.from_name || m.from_phone, m.kind === 'text' ? m.body : preview(m));
+    loadChats();
+  });
+  socket.on('msg:read', function (d) {
+    if (S.chat && S.chat.phone === d.phone) {
+      S.chat.messages.forEach(function (m) { if (m.mine && !m.read_at) m.read_at = new Date().toISOString(); });
+      renderMsgs();
+    }
+  });
+
+  // calls
   socket.on('call:ringing', function (d) { if (S.call) S.call.id = d.callId; });
 
   socket.on('call:incoming', function (d) {
     S.call = {state: 'incoming', peer: d.from.name ? d.from.name + ' (' + d.from.phone + ')' : d.from.phone, id: d.callId};
     addRecent(d.from.phone, 'in');
     ringStart(); render();
+    notify(t('incoming'), d.from.name || d.from.phone);
   });
 
   socket.on('call:accepted', async function () {
