@@ -161,15 +161,20 @@ self.addEventListener('fetch', function () {});
 self.addEventListener('push', function (e) {
   var d = {};
   try { d = e.data ? e.data.json() : {}; } catch (x) {}
-  e.waitUntil(self.registration.showNotification(d.title || 'Ethio Call', {
-    body: d.body || '',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
-    tag: d.tag || 'ethio',
-    renotify: true,
-    requireInteraction: !!d.call,
-    vibrate: d.call ? [400, 150, 400, 150, 400] : [200],
-    data: { url: '/' }
+  var closeCall = d.tag === 'missed'
+    ? self.registration.getNotifications({ tag: 'call' }).then(function (l) { l.forEach(function (n) { n.close(); }); })
+    : Promise.resolve();
+  e.waitUntil(closeCall.then(function () {
+    return self.registration.showNotification(d.title || 'Ethio Call', {
+      body: d.body || '',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      tag: d.tag || 'ethio',
+      renotify: true,
+      requireInteraction: !!d.call,
+      vibrate: d.call ? [400, 150, 400, 150, 400] : [200],
+      data: { url: '/' }
+    });
   }));
 });
 self.addEventListener('notificationclick', function (e) {
@@ -183,6 +188,14 @@ self.addEventListener('notificationclick', function (e) {
 app.get('/sw.js', (_, res) => {
   res.set('Cache-Control', 'no-cache');
   res.type('application/javascript').send(SW_JS);
+});
+// Voice clips: upload files like offline-om.mp3, busy-am.m4a, ringback.mp3 next to index.js
+app.get('/sounds/:file', (req, res) => {
+  const f = req.params.file;
+  if (!/^(ringback|[a-z_]+-(om|am|en))\.(mp3|m4a|ogg|wav)$/.test(f)) return res.status(404).end();
+  res.sendFile(path.join(__dirname, f), { maxAge: '1h' }, (err) => {
+    if (err && !res.headersSent) res.status(404).end();
+  });
 });
 app.get('/health', (_, res) => res.json({ ok: true }));
 

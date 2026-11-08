@@ -24,6 +24,13 @@ function setupCalls(io, { pool, jwt, changeCoins, normalizePhone, push }) {
     clearInterval(c.billTimer);
     const seconds = c.startedAt ? Math.round((Date.now() - c.startedAt) / 1000) : 0;
     const payload = { callId, reason, seconds, coinsCharged: c.charged };
+    if (!c.startedAt && ['no_answer', 'unreachable', 'hangup'].includes(reason)) {
+      push.sendPush(c.calleeId, {
+        title: '📵 Missed call',
+        body: c.callerName || c.callerPhone,
+        tag: 'missed',
+      }).catch(() => {});
+    }
     emitTo(c.callerId, 'call:ended', payload);
     emitTo(c.calleeId, 'call:ended', payload);
   }
@@ -81,7 +88,7 @@ function setupCalls(io, { pool, jwt, changeCoins, normalizePhone, push }) {
 
         const phone = normalizePhone(toPhone);
         const r = await pool.query('select id, phone, name from users where phone=$1', [phone]);
-        if (!r.rowCount) return socket.emit('call:error', { message: 'User not found' });
+        if (!r.rowCount) return socket.emit('call:error', { message: 'User not found', code: 'not_found' });
         const callee = r.rows[0];
         if (callee.id === uid)
           return socket.emit('call:error', { message: 'You cannot call yourself' });
@@ -90,17 +97,17 @@ function setupCalls(io, { pool, jwt, changeCoins, normalizePhone, push }) {
           'select 1 from blocks where (user_id=$1 and blocked_id=$2) or (user_id=$2 and blocked_id=$1)',
           [uid, callee.id]
         );
-        if (bl.rowCount) return socket.emit('call:error', { message: 'User is unavailable' });
+        if (bl.rowCount) return socket.emit('call:error', { message: 'User is unavailable', code: 'offline' });
 
         const me = await pool.query('select coins, name from users where id=$1', [uid]);
         if (me.rows[0].coins < COINS_PER_MINUTE)
-          return socket.emit('call:error', { message: 'Not enough coins' });
+          return socket.emit('call:error', { message: 'Not enough coins', code: 'no_coins' });
         // offline users can still be reached with a push notification
         const calleeOnline = online.has(callee.id);
         if (!calleeOnline && !(await push.hasSubs(callee.id)))
-          return socket.emit('call:error', { message: 'User is offline' });
+          return socket.emit('call:error', { message: 'User is offline', code: 'offline' });
         if (userCall.has(callee.id))
-          return socket.emit('call:error', { message: 'User is busy' });
+          return socket.emit('call:error', { message: 'User is busy', code: 'busy' });
 
         const id = crypto.randomUUID();
         const c = {
@@ -111,9 +118,12 @@ function setupCalls(io, { pool, jwt, changeCoins, normalizePhone, push }) {
         calls.set(id, c);
         userCall.set(uid, id);
         userCall.set(callee.id, id);
-        c.ringTimer = setTimeout(() => endCall(id, 'no_answer'), RING_TIMEOUT_MS);
+        c.ringTimer = setTimeout(
+          () => endCall(id, online.has(callee.id) ? 'no_answer' : 'unreachable'),
+          RING_TIMEOUT_MS
+        );
 
-        socket.emit('call:ringing', { callId: id });
+        socket.emit('call:ringing', { callId: id, reach: calleeOnline ? 'online' : 'push' });
         if (calleeOnline) {
           emitTo(callee.id, 'call:incoming', {
             callId: id,
