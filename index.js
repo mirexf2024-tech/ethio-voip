@@ -10,8 +10,10 @@ const { pool, init } = require('./db');
 const { setupCalls } = require('./calls');
 const { setupChat } = require('./chat');
 const { setupPush } = require('./push');
+const { setupPayments } = require('./payments');
 
 const app = express();
+app.set('trust proxy', 1); // Render sits in front of us: needed to see the real visitor address
 app.use(cors());
 app.use(express.json({ limit: '3mb' }));
 
@@ -30,7 +32,7 @@ function normalizePhone(p) {
 }
 // Set NODE_ENV=production on Render to disable dev-only features
 const DEV = process.env.NODE_ENV !== 'production';
-const WELCOME_COINS = parseInt(process.env.WELCOME_COINS || '5', 10); // free coins for new users
+const WELCOME_COINS = parseInt(process.env.WELCOME_COINS || '0', 10); // free coins for new users (keep 0 until real SMS)
 
 const auth = (req, res, next) => {
   const raw = req.headers.authorization || '';
@@ -320,7 +322,9 @@ app.get('/packages', auth, async (_, res) => {
 
 // DEV ONLY: free top-up until real payment is added
 app.post('/wallet/dev-buy', auth, async (req, res) => {
-  if (!DEV) return res.status(403).json({ error: 'Disabled' });
+  const testers = (process.env.TEST_PHONES || '').split(',').map((x) => x.trim()).filter(Boolean);
+  if (process.env.ALLOW_FREE_COINS !== 'true' || !testers.includes(req.user.phone))
+    return res.status(403).json({ error: 'Disabled' });
   const p = await pool.query('select * from packages where id=$1', [req.body.package_id]);
   if (!p.rowCount) return res.status(404).json({ error: 'No package' });
   const bal = await changeCoins(req.user.id, p.rows[0].coins, `package:${p.rows[0].name}`);
@@ -332,9 +336,11 @@ const io = new Server(server, { cors: { origin: '*' } });
 const push = setupPush(app, { pool, auth });
 setupCalls(io, { pool, jwt, changeCoins, normalizePhone, push });
 setupChat(app, io, { pool, auth, normalizePhone, push });
+const payments = setupPayments(app, io, { pool, auth, changeCoins, normalizePhone, push });
 
 init()
   .then(() => push.init())
+  .then(() => payments.init())
   .then(() => {
     server.listen(process.env.PORT || 3000, '0.0.0.0', () =>
       console.log('API running')
