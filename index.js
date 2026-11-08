@@ -216,6 +216,26 @@ app.get('/ice', auth, (_, res) => {
 });
 
 // ---------- AUTH ----------
+// ---- real SMS through YOUR phone's SIM (free TextBee gateway) ----
+// Set TEXTBEE_API_KEY and TEXTBEE_DEVICE_ID on Render to turn it on.
+const SMS_ON = !!(process.env.TEXTBEE_API_KEY && process.env.TEXTBEE_DEVICE_ID);
+const SMS_DAILY_LIMIT = parseInt(process.env.SMS_DAILY_LIMIT || '200', 10); // protects your SIM and quota
+let smsDay = new Date().toDateString(), smsToday = 0;
+const otpByIp = new Map(); // ip -> times of code requests
+
+async function sendSms(phone, text) {
+  const r = await fetch(
+    `https://api.textbee.dev/api/v1/gateway/devices/${process.env.TEXTBEE_DEVICE_ID}/send-sms`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.TEXTBEE_API_KEY },
+      body: JSON.stringify({ recipients: [phone], message: text }),
+      signal: AbortSignal.timeout(15000),
+    }
+  );
+  if (!r.ok) throw new Error('SMS gateway error ' + r.status);
+}
+
 app.post('/auth/request-otp', async (req, res) => {
   try {
     const phone = normalizePhone(req.body && req.body.phone);
@@ -225,20 +245,44 @@ app.post('/auth/request-otp', async (req, res) => {
         ...(DEV && { debug_body: req.body, debug_phone: phone }),
       });
 
+    // limits: 1 code per minute and 5 per hour for a number, 8 per 10 minutes for one visitor
     const recent = await pool.query(
-      "select 1 from otps where phone=$1 and created_at > now() - interval '60 seconds'",
+      "select count(*) filter (where created_at > now() - interval '60 seconds')::int as last_min, count(*)::int as last_hour from otps where phone=$1 and created_at > now() - interval '1 hour'",
       [phone]
     );
-    if (recent.rowCount)
-      return res.status(429).json({ error: 'Wait 60 seconds' });
+    if (recent.rows[0].last_min) return res.status(429).json({ error: 'Wait 60 seconds' });
+    if (recent.rows[0].last_hour >= 5) return res.status(429).json({ error: 'Too many codes. Try again in an hour.' });
+    const now = Date.now();
+    const ipList = (otpByIp.get(req.ip) || []).filter((t) => now - t < 600000);
+    if (ipList.length >= 8) return res.status(429).json({ error: 'Too many requests. Wait 10 minutes.' });
+    ipList.push(now); otpByIp.set(req.ip, ipList);
+
+    if (SMS_ON) {
+      if (smsDay !== new Date().toDateString()) { smsDay = new Date().toDateString(); smsToday = 0; }
+      if (smsToday >= SMS_DAILY_LIMIT) return res.status(503).json({ error: 'SMS limit for today is finished. Try tomorrow.' });
+    }
 
     const code = String(crypto.randomInt(100000, 1000000));
     await pool.query(
       "insert into otps(phone, code_hash, expires_at) values($1, $2, now() + interval '5 minutes')",
       [phone, sha(code)]
     );
+
+    if (SMS_ON) {
+      try {
+        smsToday++;
+        // last line lets Chrome on Android read the code by itself (WebOTP)
+        await sendSms(phone, `Ethio Call code: ${code}\nDo not share this code.\n\n@${req.hostname} #${code}`);
+      } catch (e) {
+        console.error('SMS failed:', e.message);
+        await pool.query('delete from otps where phone=$1 and code_hash=$2', [phone, sha(code)]);
+        return res.status(502).json({ error: 'Could not send the SMS. Try again.' });
+      }
+      return res.json({ ok: true, sms: true });
+    }
+
+    // no SMS gateway yet: test mode only (anyone can read the code -> not safe for the public)
     console.log(`OTP for ${phone}: ${code}`);
-    // TODO: send real SMS here
     res.json({ ok: true, ...(DEV && { devCode: code }) });
   } catch (e) {
     console.error(e);

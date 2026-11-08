@@ -247,7 +247,7 @@ function loginView() {
   return `<div class="top">Ethio Call</div><div class="pg"><div class="card">${langSel()}
   <input id="ph" type="tel" placeholder="${t('phone')}" value="${esc(S.d_ph || '+251')}">
   <button onclick="sendCode()">${t('getCode')}</button>
-  ${S.otpSent ? `<input id="cd" type="tel" placeholder="${t('code')}" value="${esc(S.d_cd != null ? S.d_cd : S.devCode)}">
+  ${S.otpSent ? `<input id="cd" type="tel" inputmode="numeric" autocomplete="one-time-code" placeholder="${t('code')}" value="${esc(S.d_cd != null ? S.d_cd : S.devCode)}">
   <button class="g" onclick="doLogin()">${t('login')}</button>` : ''}
   </div></div>`;
 }
@@ -443,8 +443,20 @@ function render() {
 async function sendCode() {
   var p = $('ph').value;
   var r = await api('/auth/request-otp', 'POST', {phone: p});
-  if (r.ok) { S.otpSent = true; S.d_ph = p; S.devCode = r.devCode || ''; render(); }
+  if (r.ok) { S.otpSent = true; S.d_ph = p; S.devCode = r.devCode || ''; render(); if (r.sms) startWebOtp(); }
   else toast(r.error || 'Error');
+}
+
+// Chrome on Android can read the code from the SMS by itself (asks you once)
+function startWebOtp() {
+  if (!('OTPCredential' in window)) return;
+  try {
+    var ac = new AbortController();
+    setTimeout(function () { ac.abort(); }, 120000);
+    navigator.credentials.get({otp: {transport: ['sms']}, signal: ac.signal}).then(function (o) {
+      if (o && o.code) { S.d_cd = o.code; render(); doLogin(); }
+    }).catch(function () {});
+  } catch (e) {}
 }
 
 async function doLogin() {
