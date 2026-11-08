@@ -9,6 +9,7 @@ const { Server } = require('socket.io');
 const { pool, init } = require('./db');
 const { setupCalls } = require('./calls');
 const { setupChat } = require('./chat');
+const { setupPush } = require('./push');
 
 const app = express();
 app.use(cors());
@@ -85,22 +86,42 @@ function pngChunk(type, data) {
   return Buffer.concat([len, td, crc]);
 }
 function makeIcon(size) {
+  // green square, white circle, green phone handset (anti-aliased)
+  const G = [15, 118, 110];
+  const px = 1 / size;
+  const clamp = (v) => Math.max(0, Math.min(1, v));
+  const C = { x: 0.625, y: 0.375 }, r = 0.215, arcW = 0.042, padW = 0.05, padL = 0.06;
+  const E1 = { x: C.x - r, y: C.y }; // ear end
+  const E2 = { x: C.x, y: C.y + r }; // mouth end
+  const segDist = (x, y, ax, ay, bx, by) => {
+    const vx = bx - ax, vy = by - ay;
+    const t = clamp(((x - ax) * vx + (y - ay) * vy) / (vx * vx + vy * vy));
+    return Math.hypot(x - (ax + t * vx), y - (ay + t * vy));
+  };
+  const glyph = (x, y) => {
+    const dx = x - C.x, dy = y - C.y;
+    const ang = Math.atan2(dy, dx);
+    const d = ang >= Math.PI / 2 && ang <= Math.PI
+      ? Math.abs(Math.hypot(dx, dy) - r) - arcW
+      : Math.min(Math.hypot(x - E1.x, y - E1.y), Math.hypot(x - E2.x, y - E2.y)) - arcW;
+    return Math.min(
+      d,
+      segDist(x, y, E1.x, E1.y, E1.x + padL, E1.y) - padW,
+      segDist(x, y, E2.x, E2.y, E2.x, E2.y - padL) - padW
+    );
+  };
   const raw = Buffer.alloc((size * 3 + 1) * size);
-  const mid = size / 2, R = size * 0.3, w = size * 0.045;
-  const ax = size * 0.36, ay = size * 0.64, bx = size * 0.64, by = size * 0.36;
-  const vx = bx - ax, vy = by - ay;
   let p = 0;
-  for (let y = 0; y < size; y++) {
+  for (let j = 0; j < size; j++) {
     raw[p++] = 0;
-    for (let x = 0; x < size; x++) {
-      let col = [15, 118, 110];
-      if ((x - mid) ** 2 + (y - mid) ** 2 <= R * R) {
-        col = [255, 255, 255];
-        let tt = ((x - ax) * vx + (y - ay) * vy) / (vx * vx + vy * vy);
-        tt = Math.max(0, Math.min(1, tt));
-        if ((x - (ax + tt * vx)) ** 2 + (y - (ay + tt * vy)) ** 2 <= w * w) col = [15, 118, 110];
+    for (let i = 0; i < size; i++) {
+      const x = (i + 0.5) / size, y = (j + 0.5) / size;
+      const circ = clamp(0.5 - (Math.hypot(x - 0.5, y - 0.5) - 0.3) / px);
+      const gl = clamp(0.5 - glyph(x, y) / px) * circ;
+      for (let k = 0; k < 3; k++) {
+        const base = G[k] + (255 - G[k]) * circ;
+        raw[p++] = Math.round(base + (G[k] - base) * gl);
       }
-      raw[p++] = col[0]; raw[p++] = col[1]; raw[p++] = col[2];
     }
   }
   const ihdr = Buffer.alloc(13);
@@ -130,19 +151,38 @@ app.get('/manifest.json', (_, res) =>
     background_color: '#0f766e',
     theme_color: '#0f766e',
     icons: [
-      { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-      { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+      { src: '/icon-192.png?v=2', sizes: '192x192', type: 'image/png' },
+      { src: '/icon-512.png?v=2', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
     ],
   })
 );
+const SW_JS = `
+self.addEventListener('fetch', function () {});
+self.addEventListener('push', function (e) {
+  var d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (x) {}
+  e.waitUntil(self.registration.showNotification(d.title || 'Ethio Call', {
+    body: d.body || '',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    tag: d.tag || 'ethio',
+    renotify: true,
+    requireInteraction: !!d.call,
+    vibrate: d.call ? [400, 150, 400, 150, 400] : [200],
+    data: { url: '/' }
+  }));
+});
+self.addEventListener('notificationclick', function (e) {
+  e.notification.close();
+  e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (l) {
+    if (l.length) return l[0].focus();
+    return clients.openWindow('/');
+  }));
+});
+`;
 app.get('/sw.js', (_, res) => {
-  res.type('application/javascript').send(
-    "self.addEventListener('fetch', function () {});" +
-    "self.addEventListener('notificationclick', function (e) {" +
-    "e.notification.close();" +
-    "e.waitUntil(clients.matchAll({ type: 'window' }).then(function (l) {" +
-    "if (l.length) return l[0].focus(); return clients.openWindow('/'); }));});"
-  );
+  res.set('Cache-Control', 'no-cache');
+  res.type('application/javascript').send(SW_JS);
 });
 app.get('/health', (_, res) => res.json({ ok: true }));
 
@@ -276,10 +316,12 @@ app.post('/wallet/dev-buy', auth, async (req, res) => {
 
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
-setupCalls(io, { pool, jwt, changeCoins, normalizePhone });
-setupChat(app, io, { pool, auth, normalizePhone });
+const push = setupPush(app, { pool, auth });
+setupCalls(io, { pool, jwt, changeCoins, normalizePhone, push });
+setupChat(app, io, { pool, auth, normalizePhone, push });
 
 init()
+  .then(() => push.init())
   .then(() => {
     server.listen(process.env.PORT || 3000, '0.0.0.0', () =>
       console.log('API running')

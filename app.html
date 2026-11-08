@@ -62,9 +62,9 @@ button.g{background:#16a34a}button.r{background:#dc2626}button.x{background:#e5e
 <script src="/socket.io/socket.io.js"></script>
 <script>
 var T = {
-  en: {phone:`Phone number`,getCode:`Get code`,code:`Code`,login:`Login`,calls:`Calls`,wallet:`Wallet`,chats:`Chats`,settings:`Settings`,call:`Call`,recent:`Recent`,balance:`Your coins`,packages:`Packages`,buy:`Buy`,history:`History`,name:`Name`,aboutMe:`About me`,save:`Save`,logout:`Log out`,photo:`Change photo`,rate:`1 coin per minute`,incoming:`Incoming call`,calling:`Calling...`,connected:`Connected`,mute:`Mute`,unmute:`Unmute`,end:`End`,accept:`Accept`,reject:`Reject`,testBuy:`(free test)`,offline:`Connecting to server...`,saved:`Saved`,mic:`Please allow the microphone`,newChat:`Phone number to chat`,start:`Start`,typeMsg:`Type a message`,tapLoad:`Tap to load photo`,blockq:`Block this person?`,blocked:`Blocked`,unblock:`Unblock`,blockedUsers:`Blocked people`,notifs:`Notifications`,enable:`Enable`,on:`On`,off:`Off`,sound:`Ringtone & sounds`,vibrate:`Vibration`,saver:`Data saver (lower voice quality, tap to load photos)`,clearRecent:`Clear recent calls`,delAcc:`Delete my account`,delq:`Delete your account and all messages? This cannot be undone.`,delq2:`Are you sure?`,aboutApp:`About`,language:`Language`,account:`Account`,tooBig:`File is too big (max 1 MB)`,voice:`Voice message`,photoWord:`Photo`,fileWord:`File`,nobody:`No chats yet`,notifHint:`Alerts only while the app is open or in the background`,sending:`Sending...`},
-  om: {phone:`Lakkoofsa bilbilaa`,getCode:`Koodii fudhadhu`,code:`Koodii`,login:`Seeni`,calls:`Bilbila`,wallet:`Korkoroo`,chats:`Dubbii`,settings:`Qindaa'ina`,call:`Bilbili`,recent:`Dhiyeenya`,balance:`Koyinii kee`,packages:`Paakeejii`,buy:`Bitadhu`,history:`Seenaa`,name:`Maqaa`,aboutMe:`Waa'ee koo`,save:`Olkaa'i`,logout:`Ba'i`,photo:`Suuraa jijjiiri`,rate:`Daqiiqaa tokkoof koyinii 1`,incoming:`Bilbilli dhufaa jira`,calling:`Bilbilaa jira...`,connected:`Wal qabateera`,mute:`Cufi`,unmute:`Banii`,end:`Xumuri`,accept:`Fudhadhu`,reject:`Dhiisi`,testBuy:`(yaalii bilisaa)`,offline:`Sarvaratti hidhamaa jira...`,saved:`Olkaa'ameera`,mic:`Maayikiroofonii eeyyami`,newChat:`Lakkoofsa bilbilaa`,start:`Jalqabi`,typeMsg:`Ergaa barreessi`,tapLoad:`Suuraa banuuf tuqi`,blockq:`Nama kana dhoorkuu?`,blocked:`Dhoorkameera`,unblock:`Hiikuu`,blockedUsers:`Namoota dhoorkaman`,notifs:`Beeksisa`,enable:`Banii`,on:`Banaa`,off:`Cufaa`,sound:`Sagalee waca`,vibrate:`Hoosisuu (vibration)`,saver:`Data qusachuu (sagalee xiqqaa, suuraa tuqaan)`,clearRecent:`Bilbila dhiyoo haqi`,delAcc:`Akaawuntii koo haqi`,delq:`Akaawuntii fi ergaa hunda haquu? Kun deebi'ee hin dhufu.`,delq2:`Mirkaneeffattaa?`,aboutApp:`Waa'ee`,language:`Afaan`,account:`Akaawuntii`,tooBig:`Faayilli ulfaataadha (isa guddaan 1 MB)`,voice:`Ergaa sagalee`,photoWord:`Suuraa`,fileWord:`Faayila`,nobody:`Ergaan hin jiru`,notifHint:`Beeksisni yeroo aappiin banaa ykn duubatti jiru qofa dhufa`,sending:`Ergaa jira...`},
-  am: {phone:`ስልክ ቁጥር`,getCode:`ኮድ ላክ`,code:`ኮድ`,login:`ግባ`,calls:`ጥሪ`,wallet:`ቦርሳ`,chats:`ውይይት`,settings:`ቅንብሮች`,call:`ደውል`,recent:`የቅርብ ጊዜ`,balance:`ሳንቲሞችህ`,packages:`ጥቅሎች`,buy:`ግዛ`,history:`ታሪክ`,name:`ስም`,aboutMe:`ስለ እኔ`,save:`አስቀምጥ`,logout:`ውጣ`,photo:`ፎቶ ቀይር`,rate:`በደቂቃ 1 ሳንቲም`,incoming:`ገቢ ጥሪ`,calling:`በመደወል ላይ...`,connected:`ተገናኝቷል`,mute:`ድምጽ አጥፋ`,unmute:`ድምጽ አብራ`,end:`ጨርስ`,accept:`ተቀበል`,reject:`ውድቅ አድርግ`,testBuy:`(ነፃ ሙከራ)`,offline:`ከአገልጋይ ጋር በመገናኘት ላይ...`,saved:`ተቀምጧል`,mic:`ማይክሮፎን ይፍቀዱ`,newChat:`ስልክ ቁጥር`,start:`ጀምር`,typeMsg:`መልእክት ይጻፉ`,tapLoad:`ፎቶ ለመክፈት ይንኩ`,blockq:`ይህን ሰው ልከልክል?`,blocked:`ታግዷል`,unblock:`አንሳ`,blockedUsers:`የታገዱ ሰዎች`,notifs:`ማሳወቂያዎች`,enable:`አብራ`,on:`በርቷል`,off:`ጠፍቷል`,sound:`የጥሪ ድምጽ`,vibrate:`ንዝረት`,saver:`ዳታ ቆጣቢ (ዝቅተኛ የድምጽ ጥራት፣ ፎቶ በመንካት)`,clearRecent:`የቅርብ ጥሪዎችን ሰርዝ`,delAcc:`መለያዬን ሰርዝ`,delq:`መለያዎን እና ሁሉንም መልእክቶች ይሰርዙ? ይህ አይመለስም።`,delq2:`እርግጠኛ ነዎት?`,aboutApp:`ስለ`,language:`ቋንቋ`,account:`መለያ`,tooBig:`ፋይሉ በጣም ትልቅ ነው (ከፍተኛ 1 MB)`,voice:`የድምጽ መልእክት`,photoWord:`ፎቶ`,fileWord:`ፋይል`,nobody:`ገና ውይይት የለም`,notifHint:`ማሳወቂያ መተግበሪያው ክፍት ወይም ከበስተጀርባ ሲሆን ብቻ ነው`,sending:`በመላክ ላይ...`}
+  en: {phone:`Phone number`,getCode:`Get code`,code:`Code`,login:`Login`,calls:`Calls`,wallet:`Wallet`,chats:`Chats`,settings:`Settings`,call:`Call`,recent:`Recent`,balance:`Your coins`,packages:`Packages`,buy:`Buy`,history:`History`,name:`Name`,aboutMe:`About me`,save:`Save`,logout:`Log out`,photo:`Change photo`,rate:`1 coin per minute`,incoming:`Incoming call`,calling:`Calling...`,connected:`Connected`,mute:`Mute`,unmute:`Unmute`,end:`End`,accept:`Accept`,reject:`Reject`,testBuy:`(free test)`,offline:`Connecting to server...`,saved:`Saved`,mic:`Please allow the microphone`,newChat:`Phone number to chat`,start:`Start`,typeMsg:`Type a message`,tapLoad:`Tap to load photo`,blockq:`Block this person?`,blocked:`Blocked`,unblock:`Unblock`,blockedUsers:`Blocked people`,notifs:`Notifications`,enable:`Enable`,on:`On`,off:`Off`,sound:`Ringtone & sounds`,vibrate:`Vibration`,saver:`Data saver (lower voice quality, tap to load photos)`,clearRecent:`Clear recent calls`,delAcc:`Delete my account`,delq:`Delete your account and all messages? This cannot be undone.`,delq2:`Are you sure?`,aboutApp:`About`,language:`Language`,account:`Account`,tooBig:`File is too big (max 1 MB)`,voice:`Voice message`,photoWord:`Photo`,fileWord:`File`,nobody:`No chats yet`,notifHint:`Works even when the app is closed`,notifBanner:`Turn on notifications to receive calls and messages when the app is closed`,testNotif:`Send test notification`,notifFail:`Could not turn on notifications`,sending:`Sending...`},
+  om: {phone:`Lakkoofsa bilbilaa`,getCode:`Koodii fudhadhu`,code:`Koodii`,login:`Seeni`,calls:`Bilbila`,wallet:`Korkoroo`,chats:`Dubbii`,settings:`Qindaa'ina`,call:`Bilbili`,recent:`Dhiyeenya`,balance:`Koyinii kee`,packages:`Paakeejii`,buy:`Bitadhu`,history:`Seenaa`,name:`Maqaa`,aboutMe:`Waa'ee koo`,save:`Olkaa'i`,logout:`Ba'i`,photo:`Suuraa jijjiiri`,rate:`Daqiiqaa tokkoof koyinii 1`,incoming:`Bilbilli dhufaa jira`,calling:`Bilbilaa jira...`,connected:`Wal qabateera`,mute:`Cufi`,unmute:`Banii`,end:`Xumuri`,accept:`Fudhadhu`,reject:`Dhiisi`,testBuy:`(yaalii bilisaa)`,offline:`Sarvaratti hidhamaa jira...`,saved:`Olkaa'ameera`,mic:`Maayikiroofonii eeyyami`,newChat:`Lakkoofsa bilbilaa`,start:`Jalqabi`,typeMsg:`Ergaa barreessi`,tapLoad:`Suuraa banuuf tuqi`,blockq:`Nama kana dhoorkuu?`,blocked:`Dhoorkameera`,unblock:`Hiikuu`,blockedUsers:`Namoota dhoorkaman`,notifs:`Beeksisa`,enable:`Banii`,on:`Banaa`,off:`Cufaa`,sound:`Sagalee waca`,vibrate:`Hoosisuu (vibration)`,saver:`Data qusachuu (sagalee xiqqaa, suuraa tuqaan)`,clearRecent:`Bilbila dhiyoo haqi`,delAcc:`Akaawuntii koo haqi`,delq:`Akaawuntii fi ergaa hunda haquu? Kun deebi'ee hin dhufu.`,delq2:`Mirkaneeffattaa?`,aboutApp:`Waa'ee`,language:`Afaan`,account:`Akaawuntii`,tooBig:`Faayilli ulfaataadha (isa guddaan 1 MB)`,voice:`Ergaa sagalee`,photoWord:`Suuraa`,fileWord:`Faayila`,nobody:`Ergaan hin jiru`,notifHint:`Aappiin cufamee illee ni hojjeta`,notifBanner:`Aappiin cufamee illee bilbila fi ergaa argachuuf beeksisa banii`,testNotif:`Beeksisa qorannoo ergi`,notifFail:`Beeksisa banuun hin danda'amne`,sending:`Ergaa jira...`},
+  am: {phone:`ስልክ ቁጥር`,getCode:`ኮድ ላክ`,code:`ኮድ`,login:`ግባ`,calls:`ጥሪ`,wallet:`ቦርሳ`,chats:`ውይይት`,settings:`ቅንብሮች`,call:`ደውል`,recent:`የቅርብ ጊዜ`,balance:`ሳንቲሞችህ`,packages:`ጥቅሎች`,buy:`ግዛ`,history:`ታሪክ`,name:`ስም`,aboutMe:`ስለ እኔ`,save:`አስቀምጥ`,logout:`ውጣ`,photo:`ፎቶ ቀይር`,rate:`በደቂቃ 1 ሳንቲም`,incoming:`ገቢ ጥሪ`,calling:`በመደወል ላይ...`,connected:`ተገናኝቷል`,mute:`ድምጽ አጥፋ`,unmute:`ድምጽ አብራ`,end:`ጨርስ`,accept:`ተቀበል`,reject:`ውድቅ አድርግ`,testBuy:`(ነፃ ሙከራ)`,offline:`ከአገልጋይ ጋር በመገናኘት ላይ...`,saved:`ተቀምጧል`,mic:`ማይክሮፎን ይፍቀዱ`,newChat:`ስልክ ቁጥር`,start:`ጀምር`,typeMsg:`መልእክት ይጻፉ`,tapLoad:`ፎቶ ለመክፈት ይንኩ`,blockq:`ይህን ሰው ልከልክል?`,blocked:`ታግዷል`,unblock:`አንሳ`,blockedUsers:`የታገዱ ሰዎች`,notifs:`ማሳወቂያዎች`,enable:`አብራ`,on:`በርቷል`,off:`ጠፍቷል`,sound:`የጥሪ ድምጽ`,vibrate:`ንዝረት`,saver:`ዳታ ቆጣቢ (ዝቅተኛ የድምጽ ጥራት፣ ፎቶ በመንካት)`,clearRecent:`የቅርብ ጥሪዎችን ሰርዝ`,delAcc:`መለያዬን ሰርዝ`,delq:`መለያዎን እና ሁሉንም መልእክቶች ይሰርዙ? ይህ አይመለስም።`,delq2:`እርግጠኛ ነዎት?`,aboutApp:`ስለ`,language:`ቋንቋ`,account:`መለያ`,tooBig:`ፋይሉ በጣም ትልቅ ነው (ከፍተኛ 1 MB)`,voice:`የድምጽ መልእክት`,photoWord:`ፎቶ`,fileWord:`ፋይል`,nobody:`ገና ውይይት የለም`,notifHint:`መተግበሪያው ሲዘጋም ይሰራል`,notifBanner:`መተግበሪያው ሲዘጋ ጥሪ እና መልእክት ለመቀበል ማሳወቂያ ያብሩ`,testNotif:`የሙከራ ማሳወቂያ ላክ`,notifFail:`ማሳወቂያ ማብራት አልተቻለም`,sending:`በመላክ ላይ...`}
 };
 var S = {lang: localStorage.getItem('lg') || 'om', token: localStorage.getItem('tk'), me: null, coins: 0, hist: [], pkgs: [],
   chats: [], chat: null, blocks: [], recording: false, stick: false, set: {sound: true, vibrate: true, saver: true},
@@ -126,10 +126,51 @@ function notify(title, body) {
     r.showNotification(title, {body: body, icon: '/icon-192.png', tag: 'ethio'});
   }).catch(function () { try { new Notification(title, {body: body}); } catch (e) {} });
 }
+function b64ToU8(b64) {
+  var pad = '='.repeat((4 - b64.length % 4) % 4);
+  var raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+  var out = new Uint8Array(raw.length);
+  for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
+function pushReady() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; }
+function swReady() {
+  return Promise.race([navigator.serviceWorker.ready, new Promise(function (_, rej) { setTimeout(rej, 5000); })]);
+}
+// subscribe this phone to push (only if the user already allowed notifications)
+async function pushOn() {
+  if (!pushReady() || Notification.permission !== 'granted') return false;
+  try {
+    var reg = await swReady();
+    var sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      var k = await (await fetch('/push/key')).json();
+      if (!k.key) return false;
+      sub = await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: b64ToU8(k.key)});
+    }
+    var r = await api('/push/subscribe', 'POST', {subscription: sub.toJSON()});
+    return !!r.ok;
+  } catch (e) { return false; }
+}
+// forget this phone (used when logging out, so the next person does not get your calls)
+async function pushOff() {
+  if (!pushReady()) return;
+  try {
+    var reg = await swReady();
+    var sub = await reg.pushManager.getSubscription();
+    if (sub) { await api('/push/unsubscribe', 'POST', {endpoint: sub.endpoint}); await sub.unsubscribe(); }
+  } catch (e) {}
+}
 async function askNotif() {
-  if (!('Notification' in window)) return toast('Not supported');
+  if (!pushReady()) return toast('Not supported');
   var p = await Notification.requestPermission();
-  toast(p === 'granted' ? t('on') : t('off'));
+  if (p !== 'granted') { toast(t('off')); return render(); }
+  var ok = await pushOn();
+  toast(ok ? t('on') : t('notifFail'));
+}
+async function testPush() {
+  var r = await api('/push/test', 'POST');
+  toast(r.sent ? t('on') : t('notifFail'));
 }
 
 /* ---------- recent calls ---------- */
@@ -168,7 +209,8 @@ function preview(c) {
 }
 
 function chatsTab() {
-  return `<div class="card"><input id="nc" type="tel" placeholder="${t('newChat')}" value="${esc(S.d_nc || '')}">
+  var ask = pushReady() && Notification.permission === 'default';
+  return `${ask ? `<div class="card"><div>🔔 ${t('notifBanner')}</div><button onclick="askNotif()">${t('enable')}</button></div>` : ''}<div class="card"><input id="nc" type="tel" placeholder="${t('newChat')}" value="${esc(S.d_nc || '')}">
   <button onclick="newChat()">${t('start')}</button></div>
   <div class="card">${S.chats.map(function (c) {
     return `<div class="row" onclick="openChat('${esc(c.phone)}')"><span style="display:flex;gap:10px;align-items:center;min-width:0">
@@ -216,7 +258,7 @@ function settingsTab() {
   <div class="card"><b>${t('language')}</b>${langSel()}</div>
   <div class="card"><b>${t('calls')}</b>${tg('sound', t('sound'))}${tg('vibrate', t('vibrate'))}${tg('saver', t('saver'))}</div>
   <div class="card"><b>${t('notifs')}</b><div class="row"><span class="s">${esc(np)}</span>${np === 'granted' || np === 'unsupported' ? '' : `<button onclick="askNotif()">${t('enable')}</button>`}</div>
-  <div class="s">${t('notifHint')}</div></div>
+  <div class="s">${t('notifHint')}</div>${np === 'granted' ? `<button class="x" onclick="testPush()">${t('testNotif')}</button>` : ''}</div>
   <div class="card"><b>${t('blockedUsers')}</b>${S.blocks.map(function (b) {
     return `<div class="row"><span>${esc(b.name || b.phone)}</span><button class="x" onclick="unblock('${esc(b.phone)}')">${t('unblock')}</button></div>`;
   }).join('') || '<div class="s">—</div>'}</div>
@@ -340,7 +382,8 @@ async function doLogin() {
   boot();
 }
 
-function logout() {
+async function logout() {
+  await pushOff();
   localStorage.removeItem('tk');
   if (socket) socket.close();
   S.token = null; S.me = null; S.otpSent = false; S.loading = false; S.online = false;
@@ -404,6 +447,7 @@ async function boot() {
   S.loading = false;
   connect();
   render();
+  pushOn();
 }
 
 /* ---------- messages ---------- */

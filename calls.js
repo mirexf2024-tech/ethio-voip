@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const COINS_PER_MINUTE = parseInt(process.env.COINS_PER_MINUTE || '1', 10);
 const RING_TIMEOUT_MS = 45000; // caller gives up after 45 seconds
 
-function setupCalls(io, { pool, jwt, changeCoins, normalizePhone }) {
+function setupCalls(io, { pool, jwt, changeCoins, normalizePhone, push }) {
   const online = new Map();   // userId -> socket
   const calls = new Map();    // callId -> call object
   const userCall = new Map(); // userId -> callId (a user can only be in 1 call)
@@ -62,6 +62,16 @@ function setupCalls(io, { pool, jwt, changeCoins, normalizePhone }) {
     online.set(uid, socket);
     console.log(`online: ${socket.user.phone}`);
 
+    // if someone is already ringing this user (opened the app from the notification), show it now
+    const ringingId = userCall.get(uid);
+    const ringing = ringingId && calls.get(ringingId);
+    if (ringing && ringing.calleeId === uid && !ringing.startedAt) {
+      socket.emit('call:incoming', {
+        callId: ringing.id,
+        from: { phone: ringing.callerPhone, name: ringing.callerName },
+      });
+    }
+
     // ---- caller starts a call ----
     socket.on('call:start', async (data) => {
       try {
@@ -85,23 +95,40 @@ function setupCalls(io, { pool, jwt, changeCoins, normalizePhone }) {
         const me = await pool.query('select coins, name from users where id=$1', [uid]);
         if (me.rows[0].coins < COINS_PER_MINUTE)
           return socket.emit('call:error', { message: 'Not enough coins' });
-        if (!online.has(callee.id))
+        // offline users can still be reached with a push notification
+        const calleeOnline = online.has(callee.id);
+        if (!calleeOnline && !(await push.hasSubs(callee.id)))
           return socket.emit('call:error', { message: 'User is offline' });
         if (userCall.has(callee.id))
           return socket.emit('call:error', { message: 'User is busy' });
 
         const id = crypto.randomUUID();
-        const c = { id, callerId: uid, calleeId: callee.id, startedAt: null, charged: 0 };
+        const c = {
+          id, callerId: uid, calleeId: callee.id,
+          callerPhone: socket.user.phone, callerName: me.rows[0].name,
+          startedAt: null, charged: 0,
+        };
         calls.set(id, c);
         userCall.set(uid, id);
         userCall.set(callee.id, id);
         c.ringTimer = setTimeout(() => endCall(id, 'no_answer'), RING_TIMEOUT_MS);
 
         socket.emit('call:ringing', { callId: id });
-        emitTo(callee.id, 'call:incoming', {
-          callId: id,
-          from: { phone: socket.user.phone, name: me.rows[0].name },
-        });
+        if (calleeOnline) {
+          emitTo(callee.id, 'call:incoming', {
+            callId: id,
+            from: { phone: socket.user.phone, name: me.rows[0].name },
+          });
+        } else {
+          // callee's app is closed: wake the phone with a notification
+          const sentTo = await push.sendPush(callee.id, {
+            call: true,
+            title: '📞 ' + (me.rows[0].name || socket.user.phone),
+            body: 'Incoming call',
+            tag: 'call',
+          });
+          if (!sentTo) endCall(id, 'unreachable');
+        }
       } catch (e) {
         console.error(e);
         socket.emit('call:error', { message: 'Server error' });

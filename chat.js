@@ -6,7 +6,7 @@ const SAFE_MIME = [
   'audio/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/aac', 'audio/x-m4a',
 ];
 
-function setupChat(app, io, { pool, auth, normalizePhone }) {
+function setupChat(app, io, { pool, auth, normalizePhone, push }) {
   const room = (id) => 'u' + id;
   const sent = new Map(); // userId -> timestamps (simple rate limit)
 
@@ -146,6 +146,20 @@ function setupChat(app, io, { pool, auth, normalizePhone }) {
         from_phone: req.user.phone,
         from_name: me.rows[0] ? me.rows[0].name : null,
       });
+      // receiver has the app closed -> send a push notification
+      io.in(room(peer.id)).fetchSockets().then((socks) => {
+        if (socks.length) return;
+        const preview =
+          kind === 'text' ? body.slice(0, 100)
+          : kind === 'image' ? '📷 Photo'
+          : kind === 'voice' ? '🎤 Voice message'
+          : '📎 ' + (name || 'File');
+        push.sendPush(peer.id, {
+          title: (me.rows[0] && me.rows[0].name) || req.user.phone,
+          body: preview,
+          tag: 'msg-' + req.user.id,
+        });
+      }).catch((e) => console.error(e));
       res.json({ ok: true, msg });
     } catch (e) {
       console.error(e);
