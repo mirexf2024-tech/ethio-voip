@@ -61,10 +61,66 @@ async function changeCoins(userId, delta, reason) {
   return r.rowCount ? r.rows[0].balance_after : null;
 }
 
+
+// ---- app icon made by the server itself (no icon files needed) ----
+const zlib = require('zlib');
+const CRC_TABLE = (() => {
+  const t = [];
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(buf) {
+  let c = 0xffffffff;
+  for (let i = 0; i < buf.length; i++) c = CRC_TABLE[(c ^ buf[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+function pngChunk(type, data) {
+  const len = Buffer.alloc(4); len.writeUInt32BE(data.length);
+  const td = Buffer.concat([Buffer.from(type), data]);
+  const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(td));
+  return Buffer.concat([len, td, crc]);
+}
+function makeIcon(size) {
+  const raw = Buffer.alloc((size * 3 + 1) * size);
+  const mid = size / 2, R = size * 0.3, w = size * 0.045;
+  const ax = size * 0.36, ay = size * 0.64, bx = size * 0.64, by = size * 0.36;
+  const vx = bx - ax, vy = by - ay;
+  let p = 0;
+  for (let y = 0; y < size; y++) {
+    raw[p++] = 0;
+    for (let x = 0; x < size; x++) {
+      let col = [15, 118, 110];
+      if ((x - mid) ** 2 + (y - mid) ** 2 <= R * R) {
+        col = [255, 255, 255];
+        let tt = ((x - ax) * vx + (y - ay) * vy) / (vx * vx + vy * vy);
+        tt = Math.max(0, Math.min(1, tt));
+        if ((x - (ax + tt * vx)) ** 2 + (y - (ay + tt * vy)) ** 2 <= w * w) col = [15, 118, 110];
+      }
+      raw[p++] = col[0]; raw[p++] = col[1]; raw[p++] = col[2];
+    }
+  }
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(size, 0); ihdr.writeUInt32BE(size, 4);
+  ihdr[8] = 8; ihdr[9] = 2; // 8-bit RGB
+  return Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    pngChunk('IHDR', ihdr), pngChunk('IDAT', zlib.deflateSync(raw)), pngChunk('IEND', Buffer.alloc(0)),
+  ]);
+}
+const ICONS = {};
+const iconRoute = (size) => (_, res) => {
+  ICONS[size] = ICONS[size] || makeIcon(size);
+  res.set('Cache-Control', 'public, max-age=86400').type('png').send(ICONS[size]);
+};
+
 // ---- the app itself (PWA) ----
 app.get('/', (_, res) => res.sendFile(path.join(__dirname, 'app.html')));
-app.get('/icon-192.png', (_, res) => res.sendFile(path.join(__dirname, 'icon-192.png')));
-app.get('/icon-512.png', (_, res) => res.sendFile(path.join(__dirname, 'icon-512.png')));
+app.get('/icon-192.png', iconRoute(192));
+app.get('/icon-512.png', iconRoute(512));
 app.get('/manifest.json', (_, res) =>
   res.json({
     name: 'Ethio Call',
