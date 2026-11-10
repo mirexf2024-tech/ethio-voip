@@ -11,6 +11,7 @@ const { setupCalls } = require('./calls');
 const { setupChat } = require('./chat');
 const { setupPush } = require('./push');
 const { setupPayments } = require('./payments');
+const { setupTelegram } = require('./telegram');
 
 const app = express();
 app.set('trust proxy', 1); // Render sits in front of us: needed to see the real visitor address
@@ -199,7 +200,7 @@ app.get('/sounds/:file', (req, res) => {
     if (err && !res.headersSent) res.status(404).end();
   });
 });
-app.get('/health', (_, res) => res.json({ ok: true, sms: SMS_ON })); // sms:true = real SMS is on
+app.get('/health', (_, res) => res.json({ ok: true, sms: SMS_ON, tg: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_BOT_USERNAME && process.env.TELEGRAM_WEBHOOK_SECRET) }));
 
 // Browser test page for calls (open /test on two phones)
 app.get('/test', (_, res) => res.sendFile(path.join(__dirname, 'test.html')));
@@ -380,11 +381,13 @@ const io = new Server(server, { cors: { origin: '*' } });
 const push = setupPush(app, { pool, auth });
 setupCalls(io, { pool, jwt, changeCoins, normalizePhone, push });
 setupChat(app, io, { pool, auth, normalizePhone, push });
+const telegram = setupTelegram(app, { pool, normalizePhone, PHONE, sha });
 const payments = setupPayments(app, io, { pool, auth, changeCoins, normalizePhone, push });
 
 init()
   .then(() => push.init())
   .then(() => payments.init())
+  .then(() => telegram.init())
   .then(() => {
     server.listen(process.env.PORT || 3000, '0.0.0.0', () =>
       console.log('API running')
