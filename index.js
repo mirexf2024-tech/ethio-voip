@@ -199,7 +199,7 @@ app.get('/sounds/:file', (req, res) => {
     if (err && !res.headersSent) res.status(404).end();
   });
 });
-app.get('/health', (_, res) => res.json({ ok: true }));
+app.get('/health', (_, res) => res.json({ ok: true, sms: SMS_ON })); // sms:true = real SMS is on
 
 // Browser test page for calls (open /test on two phones)
 app.get('/test', (_, res) => res.sendFile(path.join(__dirname, 'test.html')));
