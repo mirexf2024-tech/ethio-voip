@@ -208,10 +208,25 @@ app.get('/test', (_, res) => res.sendFile(path.join(__dirname, 'test.html')));
 // STUN/TURN servers for calls. Add a TURN server later via ICE_SERVERS env (JSON)
 app.get('/ice', auth, (_, res) => {
   let iceServers = [{ urls: 'stun:stun.l.google.com:19302' }];
-  try {
-    if (process.env.ICE_SERVERS) iceServers = JSON.parse(process.env.ICE_SERVERS);
-  } catch (e) {
-    console.error('ICE_SERVERS is not valid JSON');
+  const user = process.env.TURN_USERNAME, pass = process.env.TURN_CREDENTIAL;
+  if (user && pass) {
+    // easy way: set only TURN_USERNAME and TURN_CREDENTIAL (and TURN_HOST if it is not the default)
+    const host = process.env.TURN_HOST || 'global.relay.metered.ca';
+    const t = (urls) => ({ urls, username: user, credential: pass });
+    iceServers = [
+      { urls: 'stun:stun.relay.metered.ca:80' },
+      t(`turn:${host}:80`),
+      t(`turn:${host}:80?transport=tcp`),
+      t(`turn:${host}:443`),
+      t(`turns:${host}:443?transport=tcp`),
+    ];
+  } else {
+    // advanced way: the whole list as JSON
+    try {
+      if (process.env.ICE_SERVERS) iceServers = JSON.parse(process.env.ICE_SERVERS);
+    } catch (e) {
+      console.error('ICE_SERVERS is not valid JSON');
+    }
   }
   res.json({ iceServers });
 });
