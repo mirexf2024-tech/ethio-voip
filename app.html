@@ -58,6 +58,14 @@ a.btn{display:block;text-align:center;text-decoration:none;font-size:17px;paddin
 </style>
 </head>
 <body>
+
+<!-- =================================================== -->
+<!-- ADSTERRA AD BANNER (Bakka kana qabatamaatti taa'uun hojjeta) -->
+<!-- =================================================== -->
+<div style="text-align:center; background:#fff; padding:4px 0; max-width:480px; margin:0 auto; border-bottom:1px solid #e5e7eb;">
+    <script data-cfasync="false" src="https://bicea.org/14/86cbb695e92a4fb41aee1bcb898870be"></script>
+</div>
+
 <div id="app"></div>
 <audio id="remote" autoplay playsinline></audio>
 <script src="/socket.io/socket.io.js"></script>
@@ -126,8 +134,6 @@ function ringStart() {
 }
 function ringStop() { clearInterval(ringT); ringT = null; }
 
-// ringback: what the CALLER hears while the other phone rings.
-// Put your own ringback.mp3 in the repo to replace this standard tone (1 s tone, 4 s silence).
 var rbT = null, rbOsc = null, rbAudio = null;
 function rbSynth() {
   if (!actx) return;
@@ -155,8 +161,6 @@ function rbStop() {
   if (rbOsc) { try { rbOsc.stop(); } catch (e) {} rbOsc = null; }
 }
 
-// status announcements (like the network voice): plays /sounds/<key>-<lang>.mp3 if you uploaded it,
-// otherwise the phone's own voice (only if it has one for this language), and always shows the text
 function speak(text) {
   if (!('speechSynthesis' in window)) return;
   var lang = {om: 'om', am: 'am', en: 'en'}[S.lang];
@@ -197,7 +201,6 @@ function pushReady() { return 'serviceWorker' in navigator && 'PushManager' in w
 function swReady() {
   return Promise.race([navigator.serviceWorker.ready, new Promise(function (_, rej) { setTimeout(rej, 5000); })]);
 }
-// subscribe this phone to push (only if the user already allowed notifications)
 async function pushOn() {
   if (!pushReady() || Notification.permission !== 'granted') return false;
   try {
@@ -212,7 +215,6 @@ async function pushOn() {
     return !!r.ok;
   } catch (e) { return false; }
 }
-// forget this phone (used when logging out, so the next person does not get your calls)
 async function pushOff() {
   if (!pushReady()) return;
   try {
@@ -371,8 +373,10 @@ function mainView() {
   var b = S.tab === 'chats' ? chatsTab() : S.tab === 'calls' ? callsTab() : S.tab === 'wallet' ? walletTab() : settingsTab();
   var unread = S.chats.reduce(function (a, c) { return a + (c.unread || 0); }, 0);
   var items = [['chats', '💬'], ['calls', '📞'], ['wallet', '🪙'], ['settings', '⚙️']];
+  
   return (S.online ? '' : `<div class="ban">${t('offline')}</div>`) +
-    `<div class="top"><span>Ethio Call</span><span class="pill">🪙 ${S.coins}</span></div><div class="pg">${b}</div>` +
+    `<div class="top"><span>Ethio Call</span><span class="pill">🪙 ${S.coins}</span></div>` +
+    `<div class="pg">${b}</div>` +
     `<div class="nav">${items.map(function (i) {
       return `<div class="${S.tab === i[0] ? 'on' : ''}" onclick="go('${i[0]}')">${i[1]}${i[0] === 'chats' && unread ? `<span class="dot">${unread}</span>` : ''}<br>${t(i[0])}</div>`;
     }).join('')}</div>`;
@@ -479,7 +483,6 @@ async function tgCode() {
   S.otpSent = true; S.d_ph = p; S.devCode = ''; S.tgLink = r.link; render();
 }
 
-// Chrome on Android can read the code from the SMS by itself (asks you once)
 function startWebOtp() {
   if (!('OTPCredential' in window)) return;
   try {
@@ -755,7 +758,6 @@ async function flushIce() {
   pendingIce = [];
 }
 
-// low-data mode: ~16 kbps voice (about 0.12 MB per minute); otherwise 32 kbps
 function limitBitrate() {
   try {
     pc.getSenders().forEach(function (sd) {
@@ -832,7 +834,6 @@ function connect() {
   socket.on('disconnect', function () { S.online = false; if (S.call) cleanup(); else render(); });
   socket.on('connect_error', function () { S.online = false; render(); });
 
-  // messages
   socket.on('msg:new', function (m) {
     if (S.chat && S.chat.phone === m.from_phone) {
       S.chat.messages.push(Object.assign({mine: false}, m));
@@ -852,7 +853,6 @@ function connect() {
     }
   });
 
-  // calls
   socket.on('call:ringing', function (d) { if (S.call) { S.call.id = d.callId; S.call.reach = d.reach; render(); } });
 
   socket.on('call:incoming', function (d) {
