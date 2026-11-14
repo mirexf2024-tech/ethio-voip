@@ -59,9 +59,6 @@ a.btn{display:block;text-align:center;text-decoration:none;font-size:17px;paddin
 </head>
 <body>
 
-<!-- =================================================== -->
-<!-- ADSTERRA AD BANNER -->
-<!-- =================================================== -->
 <div style="text-align:center; background:#fff; padding:4px 0; max-width:480px; margin:0 auto; border-bottom:1px solid #e5e7eb;">
     <script data-cfasync="false" src="https://bicea.org/14/86cbb695e92a4fb41aee1bcb898870be"></script>
 </div>
@@ -113,7 +110,6 @@ function go(tab) { S.tab = tab; render(); }
 function setLang(l) { S.lang = l; localStorage.setItem('lg', l); render(); }
 function tog(k) { S.set[k] = !S.set[k]; try { localStorage.setItem('st', JSON.stringify(S.set)); } catch (e) {} render(); }
 
-/* ---------- sounds & notifications ---------- */
 function unlock() {
   if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
   if (actx && actx.state === 'suspended') actx.resume();
@@ -235,7 +231,6 @@ async function testPush() {
   toast(r.sent ? t('on') : t('notifFail'));
 }
 
-/* ---------- recent calls ---------- */
 function getRec() { try { return JSON.parse(localStorage.getItem('rec') || '[]'); } catch (e) { return []; } }
 function addRecent(phone, dir) {
   var r = getRec().filter(function (x) { return x.phone !== phone; });
@@ -244,7 +239,6 @@ function addRecent(phone, dir) {
 }
 function clearRec() { localStorage.removeItem('rec'); render(); }
 
-/* ---------- screens ---------- */
 function langSel() {
   var o = function (v, n) { return '<option value="' + v + '"' + (S.lang === v ? ' selected' : '') + '>' + n + '</option>'; };
   return '<select onchange="setLang(this.value)">' + o('om', 'Afaan Oromoo') + o('am', 'አማርኛ') + o('en', 'English') + '</select>';
@@ -316,10 +310,9 @@ function bonusCards() {
   return `<div class="card"><div class="s c">${t('msgFree')}</div>
   ${b.daily_coins > 0 ? (b.daily_available ? `<button class="g" onclick="claimDaily()">${t('daily')} (+${b.daily_coins})</button>` : `<div class="s c">${t('dailyDone')}</div>`) : ''}</div>
   
-  <!-- WATCH & EARN (START.IO REWARDED ADS REAL INTEGRATION) -->
   <div class="card" style="background:#f0fdf4; border:1px solid #bbf7d0;">
     <b style="color:#166534">🪙 Watch & Earn</b>
-    <div class="s" style="margin: 4px 0 10px 0;">Beeksisa guutuu ilaaluun koyinii argadhaa! (Osoo hin ilaalin coin hin dabalamu)</div>
+    <div class="s" style="margin: 4px 0 10px 0;">Beeksisa guutuu ilaaluun koyinii argadhaa!</div>
     <button class="g" onclick="watchAdForCoins()">${t('watchEarn')}</button>
   </div>
 
@@ -350,47 +343,18 @@ function walletTab() {
   }).join('') || '<div class="s">—</div>'}</div>`;
 }
 
-// Start.io Rewarded Video Ad Real Check Logic (Osoo beeksisi hin dhufin coin hin dabalu)
 function watchAdForCoins() {
   toast("Beeksisi fe'amaa jira... Maaloo obsaan eegaa", 3000);
-
-  // 1. Start.io SDK checking (Yoo Start.io SDK appii kee keessatti qindaa'ee jiru ta'e)
-  if (typeof StartApp !== 'undefined' && StartApp.showRewarded) {
-    StartApp.showRewarded({
-      onRewarded: async function() {
-        // Beeksichi guutummaatti ilaalamuu isaa mirkanaa'eera, amma server irraa coin ni daballa
-        var r = await api('/wallet/watch-reward', 'POST'); 
-        if(r && r.ok) {
-          S.coins = r.coins;
-          render();
-          toast("Galatoomi! Beeksisa guutuu ilaaluun koyinii 5 argatteetta 🪙", 4000);
-        } else {
-          S.coins += 5;
-          render();
-          toast("Galatoomi! Koyinii 5 argatteetta 🪙", 4000);
-        }
-      },
-      onNoAd: function() {
-        toast("Yeroo ammaa beeksisi hin jiru. Mee booda irra deebi'aa yaalaa!", 4000);
-      },
-      onError: function(err) {
-        toast("Rakkoo networkii irraa kan ka'e beeksisa fiduu hin danda'amne.", 4000);
-      }
-    });
-  } else {
-    // 2. Fallback Mode (Yoo SDK hin qindaa'in ykn Web-view qofa ta'e - beeksisi dhugaa dhufee xumuramuu isaa agarsiisuuf ad-simulation eeguu qaba)
-    setTimeout(function() {
-      // Asitti koodiin kun beeksisi dhugaa dhufeetii xumuramuu isaa eega (Simulated Ad check)
-      var adSuccess = confirm("🎬 [Start.io Rewarded Ad]\n\nBeeksisa kana xumuruuf 'OK' tuqi. (Osoo hin ilaalin bir yoo darbite coin hin argattu)");
-      if (adSuccess) {
-        S.coins += 5;
-        render();
-        toast("Galatoomi! Koyinii 5 argatteetta 🪙", 4000);
-      } else {
-        toast("Beeksisi dhiifameera; coin hin dabalamne.", 4000);
-      }
-    }, 1500);
-  }
+  setTimeout(function() {
+    var adSuccess = confirm("🎬 [Start.io Rewarded Ad]\n\nBeeksisa kana xumuruuf 'OK' tuqi.");
+    if (adSuccess) {
+      S.coins += 5;
+      render();
+      toast("Galatoomi! Koyinii 5 argatteetta 🪙", 4000);
+    } else {
+      toast("Beeksisi dhiifameera; coin hin dabalamne.", 4000);
+    }
+  }, 1500);
 }
 
 function settingsTab() {
@@ -398,7 +362,7 @@ function settingsTab() {
   var ab = S.d_ab != null ? S.d_ab : (m.about || '');
   var np = ('Notification' in window) ? Notification.permission : 'unsupported';
   var tg = function (k, label) {
-    return `<div class="row"><span>${label}</span><button class="${S.set[k] ? '' : 'x'}" onclick="tog('${k}')">${S.set[k] ? t('on' ) : t('off')}</button></div>`;
+    return `<div class="row"><span>${label}</span><button class="${S.set[k] ? '' : 'x'}" onclick="tog('${k}')">${S.set[k] ? t('on') : t('off')}</button></div>`;
   };
   return `<div class="card">${avatar(ph, nm ? nm[0].toUpperCase() : '👤')}
   <label class="s c" style="display:block"><input type="file" accept="image/*" style="display:none" onchange="pickPhoto(this)"><u>📷 ${t('photo')}</u></label>
@@ -429,11 +393,10 @@ function mainView() {
     `<div class="top"><span>Ethio Call</span><span class="pill">🪙 ${S.coins}</span></div>` +
     `<div class="pg">${b}</div>` +
     `<div class="nav">${items.map(function (i) {
-      return `<div class="${S.tab === i[0] ? 'on' : ''}" onclick="go('${i[0] }')">${i[1]}${i[0] === 'chats' && unread ? `<span class="dot">${unread}</span>` : ''}<br>${t(i[0])}</div>`;
+      return `<div class="${S.tab === i[0] ? 'on' : ''}" onclick="go('${i[0]}')">${i[1]}${i[0] === 'chats' && unread ? `<span class="dot">${unread}</span>` : ''}<br>${t(i[0])}</div>`;
     }).join('')}</div>`;
 }
 
-/* ---------- chat screen ---------- */
 function fmtDur(s) { s = Math.round(s || 0); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
 
 function msgsHtml() {
@@ -519,7 +482,6 @@ function render() {
   }
 }
 
-/* ---------- login / profile / wallet ---------- */
 async function sendCode() {
   var p = $('ph').value;
   var r = await api('/auth/request-otp', 'POST', {phone: p});
@@ -659,7 +621,6 @@ async function boot() {
   pushOn();
 }
 
-/* ---------- messages ---------- */
 async function getMedia(id) {
   if (M[id]) return M[id];
   var r = await fetch('/messages/media/' + id, {headers: {Authorization: 'Bearer ' + S.token}});
@@ -781,7 +742,6 @@ function voiceStop(cancel) {
   if (VR.mr && VR.mr.state !== 'inactive') VR.mr.stop();
 }
 
-/* ---------- calling ---------- */
 function key(k) {
   if (k === '⌫') S.dial = S.dial.slice(0, -1);
   else if (S.dial.length < 16) S.dial += k;
@@ -951,4 +911,26 @@ function connect() {
     loadWallet().then(loadReqs).then(loadBonus).then(function () { render(); toast('+' + d.added + ' 🪙', 5000); });
   });
   socket.on('call:low_balance', function () { toast('⚠ ' + t('balance') + ' < 1'); });
-  socket.on('call:ended', function (d
+  socket.on('call:ended', function (d) {
+    var mb = Math.max(0.1, d.seconds * (S.set.saver ? 2.5 : 4.5) / 1000).toFixed(1);
+    var m = d.reason + ' · ' + d.seconds + 's · ' + d.coinsCharged + ' 🪙' + (d.seconds > 0 ? ' · ' + t('mbUsed').replace('{n}', mb) : '');
+    var caller = S.call && S.call.role === 'caller';
+    var key = {no_answer: 'no_answer', rejected: 'rejected', unreachable: 'offline', no_coins: 'no_coins'}[d.reason];
+    cleanup();
+    if (caller && key) announce(key); else toast(m);
+  });
+  socket.on('call:error', function (d) {
+    cleanup();
+    if (d.code) announce(d.code); else toast(d.message);
+  });
+}
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(function () {});
+fetch('/health').then(function (r) { return r.json(); }).then(function (j) {
+  S.meth = {sms: !!j.sms, tg: !!j.tg};
+  if (!S.me && !S.loading) render();
+}).catch(function () {});
+if (S.token) { S.loading = true; render(); boot(); } else render();
+</script>
+</body>
+</html>
