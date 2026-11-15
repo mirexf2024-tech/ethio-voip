@@ -14,6 +14,8 @@ const { setupPayments } = require('./payments');
 const { setupTelegram } = require('./telegram');
 const { setupGrowth } = require('./growth');
 const { setupTranslate } = require('./translate');
+const { setupGroups } = require('./groups');
+const { setupAds } = require('./ads');
 
 const app = express();
 app.set('trust proxy', 1); // Render sits in front of us: needed to see the real visitor address
@@ -411,12 +413,16 @@ const translator = setupTranslate(app, { auth });
 const telegram = setupTelegram(app, { pool, normalizePhone, PHONE, sha });
 const growth = setupGrowth(app, io, { pool, auth, changeCoins, normalizePhone, push });
 const payments = setupPayments(app, io, { pool, auth, changeCoins, normalizePhone, push });
+const groups = setupGroups(app, io, { pool, auth, normalizePhone, push });
+const ads = setupAds(app, { pool, auth, changeCoins, adminOk: (req, res) => payments.adminOk(req, res) });
 
 init()
   .then(() => push.init())
   .then(() => payments.init())
   .then(() => growth.init())
   .then(() => telegram.init())
+  .then(() => groups.init())
+  .then(() => ads.init())
   .then(() => {
     server.listen(process.env.PORT || 3000, '0.0.0.0', () =>
       console.log('API running')

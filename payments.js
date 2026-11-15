@@ -278,7 +278,7 @@ function setupPayments(app, io, { pool, auth, changeCoins, normalizePhone, push 
     }
   });
 
-  return { init, isBanned: (id) => bannedIds.has(id) };
+  return { init, isBanned: (id) => bannedIds.has(id), adminOk };
 }
 
 module.exports = { setupPayments };

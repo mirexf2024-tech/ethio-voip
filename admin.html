@@ -74,6 +74,18 @@ button.g{background:#16a34a}button.r{background:#dc2626}button.x{background:#e5e
 </div>
 
 <div class="card">
+  <b>Ads</b>
+  <div class="s">Paste the banner code from Adsterra (Banner or Native). It shows as a small bar at the bottom of the app, and runs in its own sandboxed frame.</div>
+  <textarea id="adb" rows="5" maxlength="5000" placeholder="Banner code from Adsterra"></textarea>
+  <input id="adh" type="number" placeholder="Banner height in px (50 to 300)">
+  <select id="adon"><option value="1">Banner: on</option><option value="0">Banner: off</option></select>
+  <select id="rwon"><option value="1">Watch and earn: on</option><option value="0">Watch and earn: off</option></select>
+  <button onclick="saveAds()">Save ads</button>
+  <div id="adst" class="s"></div>
+  <div class="s">Adsterra does not allow rewarding people for seeing or tapping its ads. Keep the Adsterra banner as a normal banner and never say "tap the ad". Watch and earn is for Start.io videos in the Android app only.</div>
+</div>
+
+<div class="card">
   <b>Packages and prices</b>
   <div id="pk"></div>
 </div>
@@ -99,7 +111,7 @@ async function call(path, method, body) {
 }
 
 function saveKey() { KEY = $('key').value; $('key').value = ''; sessionStorage.setItem('ak', KEY); loadAll(); }
-function loadAll() { loadStats(); loadReqs(); loadUsers(); loadPackages(); }
+function loadAll() { loadStats(); loadReqs(); loadUsers(); loadPackages(); loadAds(); }
 
 async function loadStats() {
   if (!KEY) return;
@@ -184,6 +196,24 @@ async function loadPackages() {
 async function savePkg(id) {
   var r = await call('/admin/package', 'POST', {id: id, name: $('pn' + id).value, coins: $('pc' + id).value, price_etb: $('pp' + id).value});
   say(r.ok ? 'Saved' : (r.error || 'Error'));
+}
+
+async function loadAds() {
+  if (!KEY) return;
+  var r = await call('/admin/ads');
+  if (r.error) return say(r.error);
+  $('adb').value = r.banner || '';
+  $('adh').value = r.height || 100;
+  $('adon').value = r.ads_on ? '1' : '0';
+  $('rwon').value = r.reward_on ? '1' : '0';
+  $('adst').textContent = 'Videos watched today: ' + r.rewards_today + ' (' + r.reward_coins_today + ' coins given)';
+}
+
+async function saveAds() {
+  var r = await call('/admin/ads', 'POST', {banner: $('adb').value, height: $('adh').value,
+    ads_on: $('adon').value === '1', reward_on: $('rwon').value === '1'});
+  say(r.ok ? 'Saved. Phones pick it up within a minute.' : (r.error || 'Error'));
+  loadAds();
 }
 
 if (KEY) loadAll();
