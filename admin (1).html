@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Ethio Call Admin</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:system-ui,sans-serif;margin:0 auto;padding:14px 14px 60px;max-width:560px;background:#f3f4f6;color:#111}
+h1{font-size:20px;margin:6px 0 12px}
+.card{background:#fff;border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:0 1px 3px #0001}
+.card>b{display:block;margin-bottom:6px}
+input,select,textarea,button{font-size:16px;padding:11px;border-radius:10px;border:1px solid #d1d5db;width:100%;margin:5px 0;font-family:inherit}
+button{background:#0f766e;color:#fff;border:0;font-weight:600}
+button.g{background:#16a34a}button.r{background:#dc2626}button.x{background:#e5e7eb;color:#111}
+.row{display:flex;gap:8px;align-items:center}.row>*{margin:5px 0}
+.row button{width:auto;padding:9px 14px;flex:none}
+.s{font-size:13px;color:#6b7280}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{background:#f9fafb;border-radius:10px;padding:10px;text-align:center}
+.stat b{display:block;font-size:22px}
+.item{border-top:1px solid #eee;padding-top:10px;margin-top:10px}
+.tag{display:inline-block;background:#fee2e2;color:#b91c1c;border-radius:6px;padding:1px 8px;font-size:12px;margin-left:6px}
+#msg{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 16px;border-radius:10px;display:none;max-width:90%;z-index:9}
+</style>
+</head>
+<body>
+<h1>Ethio Call · Admin</h1>
+
+<div class="card">
+  <input id="key" type="password" placeholder="Admin key" autocomplete="off">
+  <button onclick="saveKey()">Open</button>
+  <div class="s">The key is the ADMIN_KEY you set on Render. It stays only in this tab.</div>
+</div>
+
+<div class="card">
+  <b>Numbers</b>
+  <button class="x" onclick="loadStats()">Refresh</button>
+  <div id="stats" class="grid"></div>
+</div>
+
+<div class="card">
+  <b>Payment requests</b>
+  <select id="st" onchange="loadReqs()">
+    <option value="pending">Waiting</option>
+    <option value="approved">Approved</option>
+    <option value="rejected">Rejected</option>
+  </select>
+  <div id="reqs"></div>
+</div>
+
+<div class="card">
+  <b>People</b>
+  <input id="q" placeholder="Search phone or name" onkeydown="if(event.key==='Enter')loadUsers()">
+  <button class="x" onclick="loadUsers()">Search</button>
+  <div id="users"></div>
+</div>
+
+<div class="card">
+  <b>Add coins by hand</b>
+  <input id="cp" type="tel" placeholder="+2519XXXXXXXX">
+  <input id="cc" type="number" placeholder="Coins">
+  <input id="cn" placeholder="Note (e.g. gift)">
+  <button class="g" onclick="credit()">Add coins</button>
+</div>
+
+<div class="card">
+  <b>Send a notice to everyone</b>
+  <input id="nt" maxlength="60" placeholder="Title">
+  <textarea id="nb" rows="3" maxlength="200" placeholder="Message (max 200 letters)"></textarea>
+  <button onclick="broadcast()">Send notice</button>
+  <div class="s">Goes to every phone that allowed notifications. One notice every 10 minutes.</div>
+</div>
+
+<div class="card">
+  <b>Packages and prices</b>
+  <div id="pk"></div>
+</div>
+
+<div id="msg"></div>
+<script>
+var KEY = sessionStorage.getItem('ak') || '';
+var $ = function (id) { return document.getElementById(id); };
+var esc = function (s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+  });
+};
+function say(m) { var e = $('msg'); e.textContent = m; e.style.display = 'block'; setTimeout(function () { e.style.display = 'none'; }, 3500); }
+
+async function call(path, method, body) {
+  try {
+    var r = await fetch(path, {method: method || 'GET',
+      headers: {'Content-Type': 'application/json', 'x-admin-key': KEY},
+      body: body ? JSON.stringify(body) : undefined});
+    return await r.json();
+  } catch (e) { return {error: 'Network error'}; }
+}
+
+function saveKey() { KEY = $('key').value; $('key').value = ''; sessionStorage.setItem('ak', KEY); loadAll(); }
+function loadAll() { loadStats(); loadReqs(); loadUsers(); loadPackages(); }
+
+async function loadStats() {
+  if (!KEY) return;
+  var r = await call('/admin/stats');
+  if (r.error) { $('stats').innerHTML = ''; return say(r.error); }
+  var box = function (n, label) { return '<div class="stat"><b>' + esc(n) + '</b><span class="s">' + esc(label) + '</span></div>'; };
+  $('stats').innerHTML =
+    box(r.users.total, 'People') + box(r.online, 'Online now') +
+    box(r.users.today, 'New today') + box(r.users.week, 'New in 7 days') +
+    box(r.calls.calls + ' / ' + r.calls.minutes, 'Calls / minutes today') + box(r.messages, 'Messages today') +
+    box(r.sold.etb_today + ' ETB', 'Sold today (' + r.sold.n_today + ')') + box(r.sold.etb + ' ETB', 'Sold in total (' + r.sold.n + ')') +
+    box(r.pending, 'Payments waiting') + box(r.users.coins_held, 'Coins people hold') +
+    box(r.push_users, 'Allowed notifications') + box(r.users.banned, 'Suspended');
+}
+
+async function loadReqs() {
+  if (!KEY) return;
+  var r = await call('/admin/requests?status=' + $('st').value);
+  if (!Array.isArray(r)) { $('reqs').innerHTML = ''; return say(r.error || 'Error'); }
+  $('reqs').innerHTML = r.map(function (p) {
+    return '<div class="item"><b>' + esc(p.package_name) + ' · ' + p.coins + ' coins · ' + p.price_etb + ' ETB</b><br>' +
+      '<span class="s">' + esc(p.name || '') + ' ' + esc(p.phone) + '<br>Transaction ID: <b>' + esc(p.ref) + '</b><br>' +
+      new Date(p.created_at).toLocaleString() + '</span>' +
+      (p.status === 'pending'
+        ? '<div class="row"><button class="g" onclick="decide(' + p.id + ',true)">Approve</button>' +
+          '<button class="r" onclick="decide(' + p.id + ',false)">Reject</button></div>' : '') + '</div>';
+  }).join('') || '<div class="s">Nothing here</div>';
+}
+
+async function decide(id, ok) {
+  if (ok && !confirm('Did the money arrive in your Telebirr? Add the coins?')) return;
+  var r = await call('/admin/decide', 'POST', {id: id, approve: ok});
+  say(r.ok ? (ok ? 'Coins added' : 'Rejected') : (r.error || 'Error'));
+  loadReqs(); loadStats();
+}
+
+async function loadUsers() {
+  if (!KEY) return;
+  var r = await call('/admin/users?q=' + encodeURIComponent($('q').value));
+  if (!Array.isArray(r)) { $('users').innerHTML = ''; return say(r.error || 'Error'); }
+  $('users').innerHTML = r.map(function (u) {
+    return '<div class="item"><b>' + esc(u.name || '—') + '</b>' + (u.banned ? '<span class="tag">suspended</span>' : '') +
+      '<br><span class="s">' + esc(u.phone) + ' · ' + u.coins + ' coins<br>joined ' + new Date(u.created_at).toLocaleDateString() + '</span>' +
+      '<div class="row"><button class="x" onclick="fill(\'' + esc(u.phone) + '\')">Add coins</button>' +
+      '<button class="' + (u.banned ? 'g' : 'r') + '" onclick="ban(\'' + esc(u.phone) + '\',' + (u.banned ? 'false' : 'true') + ')">' + (u.banned ? 'Allow again' : 'Suspend') + '</button></div></div>';
+  }).join('') || '<div class="s">Nobody found</div>';
+}
+
+function fill(phone) { $('cp').value = phone; $('cc').focus(); window.scrollTo(0, $('cp').getBoundingClientRect().top + window.scrollY - 80); }
+
+async function ban(phone, on) {
+  if (on && !confirm('Suspend ' + phone + '? They will be logged out and cannot come back.')) return;
+  var r = await call('/admin/ban', 'POST', {phone: phone, ban: on});
+  say(r.ok ? (on ? 'Suspended' : 'Allowed again') : (r.error || 'Error'));
+  loadUsers(); loadStats();
+}
+
+async function credit() {
+  var r = await call('/admin/credit', 'POST', {phone: $('cp').value, coins: $('cc').value, note: $('cn').value});
+  say(r.ok ? 'Done. New balance: ' + r.coins : (r.error || 'Error'));
+  loadStats();
+}
+
+async function broadcast() {
+  if (!confirm('Send this notice to everyone?')) return;
+  var r = await call('/admin/broadcast', 'POST', {title: $('nt').value, body: $('nb').value});
+  say(r.ok ? 'Sent to ' + r.sent_to + ' people' : (r.error || 'Error'));
+}
+
+async function loadPackages() {
+  if (!KEY) return;
+  var r = await call('/admin/packages');
+  if (!Array.isArray(r)) { $('pk').innerHTML = ''; return say(r.error || 'Error'); }
+  $('pk').innerHTML = r.map(function (p) {
+    return '<div class="item"><div class="row"><input id="pn' + p.id + '" value="' + esc(p.name) + '" placeholder="Name">' +
+      '<input id="pc' + p.id + '" type="number" value="' + p.coins + '" placeholder="Coins">' +
+      '<input id="pp' + p.id + '" type="number" value="' + p.price_etb + '" placeholder="ETB"></div>' +
+      '<button class="x" onclick="savePkg(' + p.id + ')">Save</button></div>';
+  }).join('');
+}
+
+async function savePkg(id) {
+  var r = await call('/admin/package', 'POST', {id: id, name: $('pn' + id).value, coins: $('pc' + id).value, price_etb: $('pp' + id).value});
+  say(r.ok ? 'Saved' : (r.error || 'Error'));
+}
+
+if (KEY) loadAll();
+</script>
+</body>
+</html>
