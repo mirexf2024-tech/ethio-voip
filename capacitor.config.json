@@ -1,0 +1,9 @@
+{
+  "appId": "com.mirexf2024.ethiocall",
+  "appName": "Ethio Call",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": false
+  }
+}
