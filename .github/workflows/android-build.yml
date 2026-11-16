@@ -1,4 +1,4 @@
-name: Ethio Call Signed Release APK
+name: Ethio Call Release APK
 
 on:
   workflow_dispatch:
@@ -14,7 +14,7 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Copy Socket.IO browser client
+      - name: Copy Socket.IO client
         run: npm run copy:socket
 
       - name: Generate Android project
@@ -41,10 +41,8 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-
           p = Path("android/app/src/main/AndroidManifest.xml")
           s = p.read_text()
-
           permissions = [
               "android.permission.INTERNET",
               "android.permission.RECORD_AUDIO",
@@ -52,30 +50,39 @@ jobs:
               "android.permission.MODIFY_AUDIO_SETTINGS",
               "android.permission.POST_NOTIFICATIONS"
           ]
-
           for permission in permissions:
               line = f'<uses-permission android:name="{permission}" />'
               if line not in s:
                   s = s.replace("<application", f"    {line}\n    <application", 1)
-
           p.write_text(s)
           PY
 
-      - name: Restore signing key
+      - name: Generate signing key if missing
         env:
-          KEY_DATA: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
           set -e
-          printf '%s' "$KEY_DATA" | tr -d '[:space:]' | base64 --decode > android/ethio-call-upload-key.jks
-          test -s android/ethio-call-upload-key.jks
+          if [ ! -f ethio-call-upload-key.jks ]; then
+            keytool -genkeypair -v \
+              -keystore ethio-call-upload-key.jks \
+              -storepass "$STORE_PASS" \
+              -keypass "$KEY_PASS" \
+              -alias "$KEY_ALIAS" \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Ethio Call, O=Ethio Call, C=ET"
+          fi
 
       - name: Verify signing key
         env:
           STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
-          keytool -list -keystore android/ethio-call-upload-key.jks \
+          keytool -list \
+            -keystore ethio-call-upload-key.jks \
             -storepass "$STORE_PASSWORD" \
             -alias "$KEY_ALIAS"
 
@@ -92,34 +99,34 @@ jobs:
           p = Path("android/app/build.gradle")
           s = p.read_text()
 
-          if "signingConfigs {" not in s:
-              signing = """
+          signing = """
               signingConfigs {
                   release {
-                      storeFile file("../ethio-call-upload-key.jks")
+                      storeFile file("../../ethio-call-upload-key.jks")
                       storePassword System.getenv("STORE_PASSWORD")
                       keyAlias System.getenv("KEY_ALIAS")
                       keyPassword System.getenv("KEY_PASSWORD")
                   }
               }
-              """
+          """
+
+          if "signingConfigs {" not in s:
               s = s.replace("android {", "android {\n" + signing, 1)
 
           if "signingConfig signingConfigs.release" not in s:
-              pattern = r"(buildTypes\s*\{)"
               s, count = re.subn(
-                  pattern,
-                  r'\1\n        release {\n            signingConfig signingConfigs.release\n        }',
+                  r"(buildTypes\\s*\\{)",
+                  r"\\1\n        release {\n            signingConfig signingConfigs.release\n        }",
                   s,
                   count=1
               )
               if count != 1:
-                  raise Exception("Android buildTypes block not found")
+                  raise Exception("buildTypes block not found")
 
           p.write_text(s)
           PY
 
-      - name: Build signed Release APK
+      - name: Build signed APK
         working-directory: android
         env:
           STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -134,5 +141,11 @@ jobs:
         with:
           name: ethio-call-signed-release-apk
           path: android/app/build/outputs/apk/release/app-release.apk
-          if-no-files-found: error
           retention-days: 7
+
+      - name: Backup signing key
+        uses: actions/upload-artifact@v4
+        with:
+          name: ethio-call-permanent-signing-key
+          path: ethio-call-upload-key.jks
+          retention-days: 90
