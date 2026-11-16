@@ -1,4 +1,4 @@
- name: Ethio Call Signed Release APK
+name: Ethio Call Signed Release APK
 
 on:
   workflow_dispatch:
