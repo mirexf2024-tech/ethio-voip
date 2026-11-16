@@ -1,0 +1,34 @@
+name: Create Ethio Call Signing Key
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-key:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate permanent signing key
+        env:
+          STORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          keytool -genkeypair -v \
+            -keystore ethio-call-upload-key.jks \
+            -storepass "$STORE_PASS" \
+            -keypass "$KEY_PASS" \
+            -alias "$KEY_ALIAS" \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Ethio Call, O=Ethio Call, C=ET"
+
+          base64 -w 0 ethio-call-upload-key.jks > keystore-base64.txt
+
+      - name: Upload signing key
+        uses: actions/upload-artifact@v4
+        with:
+          name: ethio-call-signing-key
+          path: keystore-base64.txt
+          retention-days: 1
