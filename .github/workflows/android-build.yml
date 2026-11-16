@@ -62,42 +62,39 @@ jobs:
           KEY_DATA: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
           echo "$KEY_DATA" | base64 --decode > android/ethio-call-upload-key.jks
-          test -s android/ethio-call-upload-key.jks
-
-      - name: Configure Android signing
+          test -s android/ethio-call-upload-key 
+          - name: Configure Android signing
+        env:
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import re
 
           p = Path("android/app/build.gradle")
           s = p.read_text()
 
-          signing = """
+          signing = '''
               signingConfigs {
                   release {
-                      storeFile file("ethio-call-upload-key.jks")
-                      storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
-                      keyAlias System.getenv("ANDROID_KEY_ALIAS")
-                      keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+                      storeFile file("../ethio-call-upload-key.jks")
+                      storePassword System.getenv("STORE_PASSWORD")
+                      keyAlias System.getenv("KEY_ALIAS")
+                      keyPassword System.getenv("KEY_PASSWORD")
                   }
               }
-
-          """
+          '''
 
           if "signingConfigs {" not in s:
-              s = s.replace("    buildTypes {", signing + "    buildTypes {", 1)
+              s = s.replace("android {", "android {\n" + signing, 1)
 
-          pattern = r"(buildTypes\\s*\\{\\s*release\\s*\\{)"
           if "signingConfig signingConfigs.release" not in s:
-              s, count = re.subn(
-                  pattern,
-                  r"\\1\n            signingConfig signingConfigs.release",
-                  s,
-                  count=1
+              s = s.replace(
+                  "buildTypes {",
+                  "buildTypes {\n        release {\n            signingConfig signingConfigs.release\n        }",
+                  1
               )
-              if count != 1:
-                  raise Exception("Could not configure release signing")
 
           p.write_text(s)
           PY
