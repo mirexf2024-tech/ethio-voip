@@ -65,8 +65,19 @@ jobs:
         env:
           KEY_DATA: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          echo "$KEY_DATA" | base64 --decode > android/ethio-call-upload-key.jks
+          set -e
+          printf '%s' "$KEY_DATA" | tr -d '[:space:]' | base64 --decode > android/ethio-call-upload-key.jks
           test -s android/ethio-call-upload-key.jks
+
+      - name: Verify signing key
+        env:
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          keytool -list -keystore android/ethio-call-upload-key.jks \
+            -storepass "$STORE_PASSWORD" \
+            -alias "$KEY_ALIAS"
 
       - name: Configure Android signing
         env:
@@ -103,7 +114,7 @@ jobs:
                   count=1
               )
               if count != 1:
-                  raise Exception("Could not locate Android buildTypes block")
+                  raise Exception("Android buildTypes block not found")
 
           p.write_text(s)
           PY
