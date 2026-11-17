@@ -327,7 +327,43 @@ async function pushOn() {
   } catch (e) { return false; }
 }
 // forget this phone (used when logging out, so the next person does not get your calls)
+var nativePushListenersReady = false;
+async function nativePushOn() {
+  if (!IS_NATIVE_APP) return false;
+  var plugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications;
+  if (!plugin) return false;
+  try {
+    if (!nativePushListenersReady) {
+      nativePushListenersReady = true;
+      await plugin.addListener('registration', function (token) {
+        if (token && token.value) {
+          try { localStorage.setItem('ec_fcm_token', token.value); } catch (e) {}
+          api('/push/register-token', 'POST', {token: token.value});
+        }
+      });
+      await plugin.addListener('registrationError', function () {});
+      await plugin.addListener('pushNotificationReceived', function (notification) {
+        if (notification && notification.title) toast(notification.title + (notification.body ? ': ' + notification.body : ''), 5000);
+      });
+      await plugin.addListener('pushNotificationActionPerformed', function () {
+        S.tab = 'calls'; render();
+      });
+    }
+    var permission = await plugin.checkPermissions();
+    if (permission.receive !== 'granted') permission = await plugin.requestPermissions();
+    if (permission.receive !== 'granted') return false;
+    await plugin.register();
+    return true;
+  } catch (e) { return false; }
+}
 async function pushOff() {
+  if (IS_NATIVE_APP) {
+    try {
+      var currentToken = localStorage.getItem('ec_fcm_token');
+      if (currentToken) await api('/push/unregister-token', 'POST', {token: currentToken});
+    } catch (e) {}
+    return;
+  }
   if (!pushReady()) return;
   try {
     var reg = await swReady();
@@ -937,7 +973,7 @@ async function boot() {
   S.loading = false;
   connect();
   render();
-  pushOn();
+  if (IS_NATIVE_APP) nativePushOn(); else pushOn();
   joinPending();
 }
 
