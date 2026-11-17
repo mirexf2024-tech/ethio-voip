@@ -230,17 +230,35 @@ function readMessage(btn) {
   if (!text) return;
   if (!('speechSynthesis' in window) || !window.SpeechSynthesisUtterance) return toast(({om:'Sagaleen dubbisuu bilbila kana irratti hin deeggaramu.',am:'የድምፅ ንባብ በዚህ ስልክ አይደገፍም።',en:'Read aloud is not supported on this phone.'})[S.lang]);
   var prefix = ({om:'om',am:'am',en:'en'})[S.lang] || 'en';
-  var voices = speechSynthesis.getVoices() || [];
-  var voice = voices.filter(function(v){return v.lang && v.lang.toLowerCase().indexOf(prefix) === 0;})[0];
-  if (!voice) return toast(({om:'Sagaleen Afaan Oromoo bilbila kana irratti hin argamne.',am:'የአማርኛ ድምፅ በዚህ ስልክ ላይ አልተገኘም።',en:'No voice for this language is installed on this phone.'})[S.lang],5000);
-  try { speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(text); u.voice = voice; u.lang = voice.lang; speechSynthesis.speak(u); }
-  catch(e) { toast('Could not read this message.'); }
+  function useVoice() {
+    var voices = speechSynthesis.getVoices() || [];
+    var voice = voices.filter(function(v){return v.lang && v.lang.toLowerCase().indexOf(prefix) === 0;})[0];
+    if (!voice) return false;
+    try { speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(text); u.voice = voice; u.lang = voice.lang; speechSynthesis.speak(u); return true; }
+    catch(e) { toast('Could not read this message.'); return true; }
+  }
+  if (useVoice()) return;
+  var waiting = false;
+  var onVoices = function() {
+    if (waiting) return; waiting = true;
+    if (window.speechSynthesis.removeEventListener) speechSynthesis.removeEventListener('voiceschanged', onVoices);
+    if (!useVoice()) toast(({om:'Sagaleen Afaan Oromoo bilbila kana irratti hin argamne.',am:'የአማርኛ ድምፅ በዚህ ስልክ ላይ አልተገኘም።',en:'No voice for this language is installed on this phone.'})[S.lang],5000);
+  };
+  if (speechSynthesis.addEventListener) speechSynthesis.addEventListener('voiceschanged', onVoices, {once:true});
+  setTimeout(onVoices, 1200);
+}
+var activeDictation = null;
+function stopDictation() {
+  if (activeDictation) { try { activeDictation.stop(); } catch(e) {} activeDictation = null; }
+  if ('speechSynthesis' in window) { try { speechSynthesis.cancel(); } catch(e) {} }
 }
 function startDictation() {
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) return toast('Speech recognition is not supported in this browser.');
   if (S.recording || S.call) return toast('Finish the current recording or call first.');
+  if (activeDictation) return toast('Speech input is already running.');
   var rec = new SR(), lang = ({om:'om-ET',am:'am-ET',en:'en-US'})[S.lang] || 'en-US';
+  activeDictation = rec;
   rec.lang = lang; rec.continuous = false; rec.interimResults = true;
   var input = $('mi'); if (!input) return;
   var base = input.value || ''; var finalText = '';
@@ -257,7 +275,7 @@ function startDictation() {
     var msg = e.error === 'not-allowed' ? 'Microphone permission was denied.' : 'Speech recognition failed or this language is not supported.';
     toast(msg,5000);
   };
-  rec.onend = function(){ if (input) S.d_mi = input.value; };
+  rec.onend = function(){ if (input) S.d_mi = input.value; if (activeDictation === rec) activeDictation = null; };
   toast(({om:'Dubbachuun barruutti jijjiirama. Sagaleen tajaajila browseriin qoratamuu danda’a.',am:'ንግግርዎ ወደ ጽሑፍ ይቀየራል። ድምፅዎ በአሳሹ አገልግሎት ሊሰራ ይችላል።',en:'Speak to enter text. Audio may be processed by your browser provider.'})[S.lang],5500);
   try { rec.start(); } catch(e) { toast('Could not start speech recognition.'); }
 }
@@ -814,6 +832,7 @@ async function doLogin() {
 }
 
 async function logout() {
+  stopDictation();
   await pushOff();
   localStorage.removeItem('tk');
   if (socket) socket.close();
@@ -963,7 +982,7 @@ async function openChat(phone) {
   S.d_mi = ''; S.stick = true; render(); loadChats();
 }
 function newChat() { var v = $('nc').value; S.d_nc = ''; if (v) openChat(v); }
-function closeChat() { S.chat = null; render(); loadChats(); }
+function closeChat() { stopDictation(); S.chat = null; render(); loadChats(); }
 function callFromChat(video) { S.dial = S.chat.phone; S.chat = null; render(); startCall(video === true); }
 
 async function blockPeer() {
@@ -1111,7 +1130,7 @@ async function openGroup(id) {
   S.d_mi = ''; S.stick = true; render(); loadGroups();
 }
 
-function closeGroup() { S.grp = null; render(); loadGroups(); }
+function closeGroup() { stopDictation(); S.grp = null; render(); loadGroups(); }
 
 function grpInfo() {
   if (!S.grp) return;
