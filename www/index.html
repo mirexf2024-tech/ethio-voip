@@ -66,6 +66,17 @@ a.btn{display:block;text-align:center;text-decoration:none;font-size:17px;paddin
 body.ad #adbar{visibility:visible}
 #adbar iframe{width:100%;border:0;display:block;height:100px}
 #adbar .s{font-size:10px;text-align:center;line-height:14px}
+
+/* Native first-launch welcome screen — isolated from the live web app */
+.ec-welcome{position:relative;min-height:100vh;min-height:100dvh;overflow:hidden;display:flex;flex-direction:column;padding:calc(16px + env(safe-area-inset-top)) 22px calc(22px + env(safe-area-inset-bottom));color:#fff;background:radial-gradient(ellipse at 50% 43%,#1762c7 0%,#073d91 43%,#031b4b 100%)}
+.ec-welcome:before{content:"";position:absolute;inset:0;opacity:.16;background-image:radial-gradient(#fff 0.7px,transparent .7px);background-size:18px 18px;mask-image:linear-gradient(to bottom,transparent,#000 35%,#000 80%,transparent)}
+.ec-welcome-lang{position:relative;z-index:2;align-self:flex-end;width:155px}.ec-welcome-lang select{margin:0;background:#ffffff18;color:#fff;border:1px solid #ffffff55;font-size:14px}.ec-welcome-lang option{color:#111}
+.ec-welcome-brand{position:relative;z-index:1;text-align:center;margin-top:clamp(25px,6vh,58px)}
+.ec-mark{height:112px;display:flex;align-items:center;justify-content:center;position:relative;color:#fff}.ec-mark span{font-size:76px;line-height:1;transform:rotate(-18deg)}.ec-mark i{font-style:normal;font-size:38px;margin-left:-9px;margin-top:35px}.ec-mark b{position:absolute;top:0;right:calc(50% - 90px);font-size:34px;letter-spacing:-8px;color:#ffdc16;transform:rotate(-35deg)}
+.ec-wordmark{font-size:clamp(32px,9vw,44px);font-weight:900;letter-spacing:1px}.ec-wordmark strong{color:#ffdc16}.ec-tagline{font-size:17px;font-weight:600;letter-spacing:1px;color:#e7efff;margin-top:4px}
+.ec-hero-art{position:relative;flex:1;min-height:175px;display:flex;align-items:center;justify-content:center;overflow:hidden}.ec-orbit{position:absolute;border:1px solid #ffffff22;border-radius:50%;width:min(72vw,300px);height:min(72vw,300px)}.ec-orbit-a{transform:scaleY(.42) rotate(-22deg)}.ec-orbit-b{transform:scaleY(.7) rotate(28deg)}.ec-globe{font-size:clamp(76px,20vw,112px);filter:drop-shadow(0 12px 20px #00153b88);opacity:.92}.ec-hero-phone{position:absolute;font-size:54px;right:18%;bottom:20%;filter:drop-shadow(0 8px 12px #00153b88)}.ec-signal{position:absolute;left:13%;bottom:24%;font-size:12px;letter-spacing:4px;color:#ffdc16}
+.ec-welcome-bottom{position:relative;z-index:1;text-align:center;margin:auto 0 0}.ec-welcome-bottom h1{font-size:clamp(18px,5vw,22px);line-height:1.45;font-weight:600;margin:0 auto 18px;max-width:340px;color:#f7faff}.ec-start,.ec-login{max-width:350px;margin:7px auto;border-radius:30px;min-height:54px;font-size:18px}.ec-start{background:#ffdc16;color:#06285f;box-shadow:0 7px 18px #00163e66}.ec-login{background:transparent;color:#fff;border:1.5px solid #ffffffbb}.ec-foot{font-size:10px;letter-spacing:2px;color:#b9cfff;margin-top:17px}
+@media(max-height:650px){.ec-welcome-brand{margin-top:12px}.ec-mark{height:75px}.ec-mark span{font-size:58px}.ec-hero-art{min-height:110px}.ec-globe{font-size:72px}.ec-welcome-bottom h1{margin-bottom:8px}.ec-start,.ec-login{min-height:46px;margin:4px auto}}
 </style>
 </head>
 <body>
@@ -266,8 +277,39 @@ function langSel() {
   return '<select onchange="setLang(this.value)">' + o('om', 'Afaan Oromoo') + o('am', 'አማርኛ') + o('en', 'English') + '</select>';
 }
 
+function finishWelcome() {
+  try { localStorage.setItem('ec_welcome_seen', '1'); } catch (e) {}
+  render();
+}
+
 function loginView() {
   var m = S.meth;
+  if (IS_NATIVE_APP && localStorage.getItem('ec_welcome_seen') !== '1') {
+    var copy = S.lang === 'om'
+      ? {tag:'Walitti hidhamiinsa salphaa', lead:'Firoottan kee fi hiriyoota kee waliin wal qunnami.', start:'Seensa', login:'Login'}
+      : S.lang === 'am'
+      ? {tag:'በቀላሉ ተገናኙ', lead:'ከቤተሰብዎና ጓደኞችዎ ጋር ይገናኙ።', start:'ጀምር', login:'Login'}
+      : {tag:'Stay Connected', lead:'Connect with your family and friends, wherever they are.', start:'Get Started', login:'Login'};
+    return `<main class="ec-welcome">
+      <div class="ec-welcome-lang">${langSel()}</div>
+      <div class="ec-welcome-brand">
+        <div class="ec-mark"><span>☎</span><i>◖</i><b>)))</b></div>
+        <div class="ec-wordmark">ETHIO <strong>CALL</strong></div>
+        <div class="ec-tagline">${copy.tag}</div>
+      </div>
+      <div class="ec-hero-art" aria-hidden="true">
+        <div class="ec-orbit ec-orbit-a"></div><div class="ec-orbit ec-orbit-b"></div>
+        <div class="ec-globe">🌍</div><div class="ec-hero-phone">📱</div>
+        <div class="ec-signal">●　●　●</div>
+      </div>
+      <section class="ec-welcome-bottom">
+        <h1>${copy.lead}</h1>
+        <button class="ec-start" onclick="finishWelcome()">${copy.start}</button>
+        <button class="ec-login" onclick="finishWelcome()">${copy.login}</button>
+        <div class="ec-foot">VOICE · VIDEO · MESSAGES</div>
+      </section>
+    </main>`;
+  }
   return `<div class="top">Ethio Call</div><div class="pg"><div class="card">${langSel()}
   <input id="ph" type="tel" placeholder="${t('phone')}" value="${esc(S.d_ph || '+251')}">
   ${m.tg ? `<button class="g" onclick="tgCode()">✈️ ${t('viaTg')}</button>` : ''}
