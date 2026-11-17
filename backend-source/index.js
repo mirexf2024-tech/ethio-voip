@@ -205,7 +205,7 @@ app.get('/sounds/:file', (req, res) => {
     if (err && !res.headersSent) res.status(404).end();
   });
 });
-app.get('/health', (_, res) => res.json({ ok: true, sms: SMS_ON, tg: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_BOT_USERNAME && process.env.TELEGRAM_WEBHOOK_SECRET), tr: !!(process.env.GOOGLE_TRANSLATE_KEY || process.env.TRANSLATE_EMAIL) }));
+app.get('/health', (_, res) => res.json({ ok: true, sms: SMS_ON, tg: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_BOT_USERNAME && process.env.TELEGRAM_WEBHOOK_SECRET), tr: !!(process.env.GOOGLE_TRANSLATE_KEY || process.env.TRANSLATE_EMAIL), fcm: !!process.env.FIREBASE_SERVICE_ACCOUNT_JSON }));
 
 // Browser test page for calls (open /test on two phones)
 app.get('/test', (_, res) => res.sendFile(path.join(__dirname, 'test.html')));
