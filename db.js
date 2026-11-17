@@ -60,6 +60,8 @@ async function init() {
     primary key (user_id, blocked_id)
   );
   alter table users add column if not exists about text;
+  alter table users add column if not exists username text;
+  create unique index if not exists users_username_unique on users(lower(username)) where username is not null and username <> '';
   alter table messages add column if not exists edited_at timestamptz;
   create table if not exists message_reactions(
     msg_id int not null references messages(id) on delete cascade,
