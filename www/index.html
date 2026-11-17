@@ -98,6 +98,11 @@ input,select{border-color:#dce5f1;border-radius:12px}
 input:focus,select:focus{outline:2px solid #0755ad33;border-color:var(--ec-blue)}
 .badge,.nav .dot{background:#e4b900;color:#14294a;font-weight:800}
 
+
+/* Free accessibility controls */
+body.ec-large{font-size:19px}body.ec-large input,body.ec-large select,body.ec-large button{font-size:19px}
+body.ec-big button,body.ec-big .nav div{min-height:58px;padding-top:16px;padding-bottom:16px}
+body.ec-contrast{background:#000!important;color:#fff!important}body.ec-contrast .card,body.ec-contrast .nav,body.ec-contrast input,body.ec-contrast select{background:#111!important;color:#fff!important;border:2px solid #ffdf00!important}body.ec-contrast .s{color:#eee!important}
 </style>
 </head>
 <body>
@@ -130,6 +135,10 @@ var VR = {mr: null, chunks: [], t0: 0, timer: null, stream: null, cancel: false}
 
 var $ = function (id) { return document.getElementById(id); };
 var t = function (k) { return (T[S.lang] && T[S.lang][k]) || T.en[k] || k; };
+var A11Y={om:{title:'Dandeettii fayyadamuu',large:'Barreeffama guddisi',big:'Qabduu guddisi',contrast:'Halluu adda baasi',note:'Filannoowwan kun bilisaan bilbila kana irratti qofa kuufamu.'},am:{title:'የተደራሽነት ቅንብሮች',large:'ጽሑፍን አሳድግ',big:'ቁልፎችን አሳድግ',contrast:'ከፍተኛ ንፅፅር',note:'ነፃ ቅንብሮች በዚህ ስልክ ላይ ይቀመጣሉ።'},en:{title:'Accessibility',large:'Larger text',big:'Larger buttons',contrast:'High contrast',note:'Free settings saved on this device.'}};
+function a11yRow(k){var a=A11Y[S.lang]||A11Y.en;var v=!!S.set[k];var label=k==='textLarge'?a.large:k==='bigButtons'?a.big:a.contrast;return '<div class="row"><span>'+label+'</span><button class="'+(v?'':'x')+'" aria-pressed="'+v+'" onclick="tog(\''+k+'\')">'+(v?t('on'):t('off'))+'</button></div>';}
+function applyA11y(){document.body.classList.toggle('ec-large',!!S.set.textLarge);document.body.classList.toggle('ec-big',!!S.set.bigButtons);document.body.classList.toggle('ec-contrast',!!S.set.highContrast);}
+
 var esc = function (s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
     return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
@@ -597,6 +606,7 @@ function settingsTab() {
   <div class="s c">${esc(m.phone)}</div>
   <button onclick="saveProfile()">${t('save')}</button></div>
   <div class="card"><b>${t('language')}</b>${langSel()}</div>
+  <div class="card"><b>${(A11Y[S.lang]||A11Y.en).title}</b>${a11yRow("textLarge")}${a11yRow("bigButtons")}${a11yRow("highContrast")}<div class="s">${(A11Y[S.lang]||A11Y.en).note}</div></div>
   <div class="card"><b>${t('calls')}</b>${tg('sound', t('sound'))}${tg('vibrate', t('vibrate'))}${tg('saver', t('saver'))}</div>
   <div class="card"><b>${t('notifs')}</b><div class="row"><span class="s">${esc(np)}</span>${np === 'granted' || np === 'unsupported' ? '' : `<button onclick="askNotif()">${t('enable')}</button>`}</div>
   <div class="s">${t('notifHint')}</div>${np === 'granted' ? `<button class="x" onclick="testPush()">${t('testNotif')}</button>` : ''}</div>
@@ -718,6 +728,7 @@ function render() {
   if (S.call) h += callView();
   if (S.msg) h += `<div class="toast">${esc(S.msg)}</div>`;
   $('app').innerHTML = h;
+  applyA11y();
   syncAd(); syncVideo();
   var nb = $('msgs');
   if (nb) {
