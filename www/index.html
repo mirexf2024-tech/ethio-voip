@@ -722,6 +722,7 @@ function walletTab() {
 function settingsTab() {
   var m = S.me, ph = S.photo || m.avatar_url, nm = S.d_nm != null ? S.d_nm : (m.name || '');
   var ab = S.d_ab != null ? S.d_ab : (m.about || '');
+  var un = S.d_un != null ? S.d_un : (m.username || '');
   var np = ('Notification' in window) ? Notification.permission : 'unsupported';
   var tg = function (k, label) {
     return `<div class="row"><span>${label}</span><button class="${S.set[k] ? '' : 'x'}" onclick="tog('${k}')">${S.set[k] ? t('on') : t('off')}</button></div>`;
@@ -729,6 +730,7 @@ function settingsTab() {
   return `<div class="card">${avatar(ph, nm ? nm[0].toUpperCase() : '👤')}
   <label class="s c" style="display:block"><input type="file" accept="image/*" style="display:none" onchange="pickPhoto(this)"><u>📷 ${t('photo')}</u></label>
   <input id="nm" placeholder="${t('name')}" maxlength="60" value="${esc(nm)}">
+  <input id="un" placeholder="Username (5-32 letters, numbers or _)" maxlength="32" autocapitalize="none" value="${esc(un)}">
   <input id="ab" placeholder="${t('aboutMe')}" maxlength="140" value="${esc(ab)}">
   <div class="s c">${esc(m.phone)}</div>
   <button onclick="saveProfile()">${t('save')}</button></div>
@@ -866,7 +868,7 @@ function callView() {
     : `<div class="ov">${info}${btns}</div>`;
 }
 
-var DRAFTS = ['ph', 'cd', 'nm', 'ab', 'mi', 'nc', 'rf', 'gp', 'gc', 'gn', 'gph', 'gap', 'gtp', 'gus', 'gds', 'gq', 'gt', 'gen', 'ged', 'geu'];
+var DRAFTS = ['ph', 'cd', 'nm', 'un', 'ab', 'mi', 'nc', 'rf', 'gp', 'gc', 'gn', 'gph', 'gap', 'gtp', 'gus', 'gds', 'gq', 'gt', 'gen', 'ged', 'geu'];
 function render() {
   DRAFTS.forEach(function (i) { var e = $(i); if (e) S['d_' + i] = e.value; });
   var af = document.activeElement && document.activeElement.id;
@@ -1011,9 +1013,9 @@ function pickPhoto(inp) {
 }
 
 async function saveProfile() {
-  var r = await api('/profile', 'PUT', {name: $('nm').value, about: $('ab').value, avatar_url: S.photo || S.me.avatar_url || null});
+  var r = await api('/profile', 'PUT', {name: $('nm').value, username: $('un').value, about: $('ab').value, avatar_url: S.photo || S.me.avatar_url || null});
   if (!r.id) return toast(r.error || 'Error');
-  S.me = r; S.photo = null; S.d_nm = null; S.d_ab = null;
+  S.me = r; S.photo = null; S.d_nm = null; S.d_ab = null; S.d_un = null;
   toast(t('saved'));
 }
 
