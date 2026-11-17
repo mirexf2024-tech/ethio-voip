@@ -52,12 +52,12 @@ jobs:
 
       - name: Restore Firebase Android configuration
         env:
-          GOOGLE_SERVICES_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
           set -e
-          test -n "$GOOGLE_SERVICES_BASE64"
+          test -n "$GOOGLE_SERVICES_JSON"
           mkdir -p android/app
-          printf '%s' "$GOOGLE_SERVICES_BASE64" | base64 --decode > android/app/google-services.json
+          printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
           node -e "const c=require('./android/app/google-services.json'); if(c.client[0].client_info.android_client_info.package_name!=='com.mirexf2024.ethiocall') process.exit(1)"
 
       - name: Configure Firebase Gradle plugin
