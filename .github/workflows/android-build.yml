@@ -95,7 +95,7 @@ jobs:
               "android.permission.RECORD_AUDIO",
               "android.permission.CAMERA",
               "android.permission.MODIFY_AUDIO_SETTINGS",
-              "android.permission.POST_NOTIFICATIONS"
+              "android.permission.POST_NOTIFICATIONS",\n              "android.permission.READ_CONTACTS"
           ]
 
           for permission in permissions:
@@ -180,7 +180,92 @@ jobs:
               activity.write_text(code)
           PY
 
-      - name: Restore permanent signing key
+
+      - name: Install native phone contacts plugin
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          base = Path("android/app/src/main/java/com/mirexf2024/ethiocall")
+          base.mkdir(parents=True, exist_ok=True)
+          plugin = base / "PhoneContactsPlugin.java"
+          plugin.write_text("""package com.mirexf2024.ethiocall;
+
+          import android.Manifest;
+          import android.database.Cursor;
+          import android.provider.ContactsContract;
+          import com.getcapacitor.JSArray;
+          import com.getcapacitor.JSObject;
+          import com.getcapacitor.PermissionState;
+          import com.getcapacitor.Plugin;
+          import com.getcapacitor.PluginCall;
+          import com.getcapacitor.PluginMethod;
+          import com.getcapacitor.annotation.CapacitorPlugin;
+          import com.getcapacitor.annotation.Permission;
+          import com.getcapacitor.annotation.PermissionCallback;
+
+          @CapacitorPlugin(name = "PhoneContacts", permissions = {
+              @Permission(alias = "contacts", strings = {Manifest.permission.READ_CONTACTS})
+          })
+          public class PhoneContactsPlugin extends Plugin {
+              @PluginMethod
+              public void getContacts(PluginCall call) {
+                  if (getPermissionState("contacts") != PermissionState.GRANTED) {
+                      requestPermissionForAlias("contacts", call, "contactsPermissionCallback");
+                      return;
+                  }
+                  readContacts(call);
+              }
+
+              @PermissionCallback
+              private void contactsPermissionCallback(PluginCall call) {
+                  if (getPermissionState("contacts") == PermissionState.GRANTED) readContacts(call);
+                  else call.reject("Contacts permission was not granted");
+              }
+
+              private void readContacts(PluginCall call) {
+                  JSArray contacts = new JSArray();
+                  Cursor cursor = null;
+                  try {
+                      String[] projection = {
+                          ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                          ContactsContract.CommonDataKinds.Phone.NUMBER
+                      };
+                      cursor = getContext().getContentResolver().query(
+                          ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                          projection, null, null,
+                          ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " COLLATE NOCASE ASC"
+                      );
+                      if (cursor != null) {
+                          int nameIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME);
+                          int numberIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
+                          while (cursor.moveToNext()) {
+                              JSObject item = new JSObject();
+                              item.put("name", nameIndex >= 0 ? cursor.getString(nameIndex) : "");
+                              item.put("phone", numberIndex >= 0 ? cursor.getString(numberIndex) : "");
+                              contacts.put(item);
+                          }
+                      }
+                      JSObject result = new JSObject();
+                      result.put("contacts", contacts);
+                      call.resolve(result);
+                  } catch (Exception e) {
+                      call.reject("Could not read phone contacts", e);
+                  } finally {
+                      if (cursor != null) cursor.close();
+                  }
+              }
+          }
+          """)
+          activity = base / "MainActivity.java"
+          code = activity.read_text()
+          if "PhoneContactsPlugin.class" not in code:
+              code = code.replace(
+                  "registerPlugin(AudioRoutePlugin.class);",
+                  "registerPlugin(AudioRoutePlugin.class);\n        registerPlugin(PhoneContactsPlugin.class);"
+              )
+              activity.write_text(code)
+          PY
+\n      - name: Restore permanent signing key
         env:
           KEY_DATA: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
