@@ -59,7 +59,22 @@ async function init() {
     blocked_id int references users(id) on delete cascade,
     primary key (user_id, blocked_id)
   );
-  alter table users add column if not exists about text;`);
+  alter table users add column if not exists about text;
+  alter table messages add column if not exists edited_at timestamptz;
+  create table if not exists message_reactions(
+    msg_id int not null references messages(id) on delete cascade,
+    user_id int not null references users(id) on delete cascade,
+    emoji text not null,
+    primary key(msg_id,user_id)
+  );
+  create table if not exists pinned_messages(
+    user_id int not null references users(id) on delete cascade,
+    peer_id int not null references users(id) on delete cascade,
+    msg_id int not null references messages(id) on delete cascade,
+    created_at timestamptz default now(),
+    primary key(user_id,peer_id,msg_id)
+  );
+`);
 
   const c = await pool.query('select count(*) from packages');
   if (c.rows[0].count === '0') {
