@@ -11,13 +11,15 @@ jobs:
       - name: Generate permanent signing key
         env:
           STORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
+          set -e
+
           keytool -genkeypair -v \
+            -storetype JKS \
             -keystore ethio-call-upload-key.jks \
             -storepass "$STORE_PASS" \
-            -keypass "$KEY_PASS" \
+            -keypass "$STORE_PASS" \
             -alias "$KEY_ALIAS" \
             -keyalg RSA \
             -keysize 2048 \
@@ -31,4 +33,4 @@ jobs:
         with:
           name: ethio-call-signing-key
           path: keystore-base64.txt
-          retention-days: 1
+          retention-days: 30
