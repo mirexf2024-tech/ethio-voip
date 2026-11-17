@@ -28,7 +28,7 @@ button{background:linear-gradient(120deg,var(--teal),#0b9b9a);color:#fff;border:
 </head>
 <body>
 <header class="top"><div class="brand"><div class="logo">E</div><div><h1>Ethio Call Control Center</h1><p>Manage your platform, people and services</p></div></div><div class="secure">● PRIVATE ADMIN AREA</div></header>
-<nav aria-label="Admin sections"><a href="#overview">Overview</a><a href="#payments">Payments</a><a href="#people">People</a><a href="#walletTools">Coins</a><a href="#notifications">Notices</a><a href="#ads">Ads</a><a href="#packages">Packages</a></nav>
+<nav aria-label="Admin sections"><a href="#overview">Overview</a><a href="#system">System</a><a href="#payments">Payments</a><a href="#people">People</a><a href="#walletTools">Coins</a><a href="#notifications">Notices</a><a href="#ads">Ads</a><a href="#packages">Packages</a></nav>
 
 <div class="card" id="accessPanel">
 <input id="key" type="password" placeholder="Admin key" autocomplete="off">
@@ -40,6 +40,13 @@ button{background:linear-gradient(120deg,var(--teal),#0b9b9a);color:#fff;border:
 <b>Numbers</b>
   <button class="x" onclick="loadStats()">Refresh</button>
   <div id="stats" class="grid"></div>
+</div>
+
+<div class="card" id="system">
+  <b>System & service status</b>
+  <button class="x" onclick="loadHealth()">Refresh service status</button>
+  <div id="health" class="grid"><div class="s">Sign in to load service status.</div></div>
+  <div class="s">These indicators show whether a service is configured on the server; they do not guarantee delivery to every device.</div>
 </div>
 
 <div class="card" id="payments">
@@ -113,7 +120,7 @@ async function call(path, method, body) {
 }
 
 function saveKey() { KEY = $('key').value; $('key').value = ''; sessionStorage.setItem('ak', KEY); loadAll(); }
-function loadAll() { loadStats(); loadReqs(); loadUsers(); loadPackages(); loadAds(); }
+function loadAll() { loadStats(); loadReqs(); loadUsers(); loadPackages(); loadAds(); loadHealth(); }
 
 async function loadStats() {
   if (!KEY) return;
@@ -127,6 +134,17 @@ async function loadStats() {
     box(r.sold.etb_today + ' ETB', 'Sold today (' + r.sold.n_today + ')') + box(r.sold.etb + ' ETB', 'Sold in total (' + r.sold.n + ')') +
     box(r.pending, 'Payments waiting') + box(r.users.coins_held, 'Coins people hold') +
     box(r.push_users, 'Allowed notifications') + box(r.users.banned, 'Suspended');
+}
+
+async function loadHealth() {
+  var r = await call('/health');
+  if (r.error || !r.ok) { $('health').innerHTML = '<div class="s">Service status unavailable</div>'; return; }
+  var item = function (label, on) {
+    return '<div class="stat"><b style="font-size:16px;color:' + (on ? '#16865b' : '#bd4242') + '">' +
+      (on ? '● Ready' : '○ Not configured') + '</b><span class="s">' + esc(label) + '</span></div>';
+  };
+  $('health').innerHTML = item('SMS gateway', !!r.sms) +
+    item('Telegram verification', !!r.tg) + item('Translation service', !!r.tr);
 }
 
 async function loadReqs() {
