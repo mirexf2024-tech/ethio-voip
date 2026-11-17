@@ -119,7 +119,7 @@ var T = {
 };
 var S = {lang: localStorage.getItem('lg') || 'om', token: localStorage.getItem('tk'), me: null, coins: 0, hist: [], pkgs: [],
   bonus: null, meth: {sms: false, tg: false, tr: false}, tgLink: '', chats: [], chat: null, groups: [], grp: null, newGrp: false, ads: null, blocks: [], payInfo: null, payPkg: null, reqs: [], recording: false, stick: false, set: {sound: true, vibrate: true, saver: true},
-  tab: 'chats', dial: '', call: null, online: false, msg: '', loading: false, otpSent: false, devCode: '', photo: null};
+  tab: 'chats', dial: '', call: null, online: false, presence: {}, peerTyping: false, typingTimer: null, msg: '', loading: false, otpSent: false, devCode: '', photo: null};
 try { Object.assign(S.set, JSON.parse(localStorage.getItem('st') || '{}')); } catch (e) {}
 try {
   var refM = /[?&]ref=([A-Za-z0-9]{8})/.exec(location.search);
@@ -431,7 +431,7 @@ function chatsTab() {
   ${list.map(function (c) {
     return `<div class="row" onclick="openChat('${esc(c.phone)}')"><span style="display:flex;gap:10px;align-items:center;min-width:0">
     ${avatar(c.avatar_url, (c.name || '#')[0].toUpperCase(), 'sm')}
-    <span style="min-width:0"><b>${esc(c.name || c.phone)}</b><br><span class="s">${preview(c)}</span></span></span>
+    <span style="min-width:0"><b>${esc(c.name || c.phone)}</b><br><span class="s">${(S.presence[c.id] !== undefined ? S.presence[c.id] : !!c.online) ? '🟢 ' + t('onlineLabel') : '⚪ ' + t('offlineLabel')} · ${preview(c)}</span></span></span>
     ${c.unread ? `<span class="badge">${c.unread}</span>` : ''}</div>`;
   }).join('') || `<div class="s c">${q ? t('noMatch') : t('nobody')}</div>`}</div>`;
 }
@@ -727,14 +727,14 @@ function composer() {
   return `<div class="comp">
   <label class="ic">📎<input type="file" style="display:none" onchange="pickFile(this,'file')"></label>
   <label class="ic">📷<input type="file" accept="image/*" style="display:none" onchange="pickFile(this,'image')"></label>
-  <input id="mi" placeholder="${t('typeMsg')}" value="${esc(S.d_mi || '')}" onkeydown="if(event.key==='Enter')sendText()">
+  <input id="mi" placeholder="${t('typeMsg')}" value="${esc(S.d_mi || '')}" oninput="typingChanged(this.value)" onkeydown="if(event.key==='Enter')sendText()">
   <button onclick="sendText()">➤</button><button class="x" onclick="voiceStart()">🎤</button>${(window.SpeechRecognition || window.webkitSpeechRecognition) ? `<button class="x" title="Speech to text" onclick="startDictation()">🗣️</button>` : ''}</div>`;
 }
 
 function chatView() {
   var c = S.chat;
   return `<div class="chatv"><div class="top"><span onclick="closeChat()" style="font-size:22px;padding-right:12px">←</span>
-  <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name || c.phone)}<br><span class="s" style="color:#d1fae5;font-weight:400">${esc(c.about || '')}</span></span>
+  <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name || c.phone)}<br><span class="s" style="color:#d1fae5;font-weight:400">${esc(c.about || '')}</span><br><span id="peerStatus" class="s" style="color:#d1fae5;font-weight:500">${chatPeerStatus()}</span></span>
   <span onclick="callFromChat(true)" style="font-size:22px;padding:0 6px">🎥</span><span onclick="callFromChat()" style="font-size:22px;padding:0 12px">📞</span><span onclick="blockPeer()" style="font-size:20px">🚫</span></div>
   <div id="msgs" class="msgs">${msgsHtml()}</div>${composer()}</div>`;
 }
@@ -975,14 +975,29 @@ async function dl(id, name) {
   } catch (e) { toast('Error'); }
 }
 
+function chatPeerStatus() {
+  if (S.peerTyping) return '✍️ ' + t('typingLabel');
+  var on = S.chat && (S.presence[S.chat.id] !== undefined ? S.presence[S.chat.id] : !!S.chat.online);
+  return on ? '🟢 ' + t('onlineLabel') : '⚪ ' + t('offlineLabel');
+}
+function typingChanged(value) {
+  if (!S.chat || !socket || !socket.connected) return;
+  socket.emit('typing:update', {phone: S.chat.phone, typing: !!String(value || '').trim()});
+  clearTimeout(S.typingTimer);
+  if (String(value || '').trim()) S.typingTimer = setTimeout(function () {
+    if (S.chat && socket && socket.connected) socket.emit('typing:update', {phone:S.chat.phone,typing:false});
+  }, 1800);
+}
+
 async function openChat(phone) {
   var r = await api('/messages/' + encodeURIComponent(phone));
   if (!r.peer) return toast(r.error || 'Error');
-  S.grp = null; S.chat = {phone: r.peer.phone, name: r.peer.name, about: r.peer.about, messages: r.messages};
+  S.grp = null; S.chat = {id: r.peer.id, phone: r.peer.phone, name: r.peer.name, about: r.peer.about, online: r.peer.online, messages: r.messages};
+  S.peerTyping = false;
   S.d_mi = ''; S.stick = true; render(); loadChats();
 }
 function newChat() { var v = $('nc').value; S.d_nc = ''; if (v) openChat(v); }
-function closeChat() { stopDictation(); S.chat = null; render(); loadChats(); }
+function closeChat() { stopDictation(); clearTimeout(S.typingTimer); if (S.chat && socket && socket.connected) socket.emit('typing:update', {phone:S.chat.phone,typing:false}); S.peerTyping = false; S.chat = null; render(); loadChats(); }
 function callFromChat(video) { S.dial = S.chat.phone; S.chat = null; render(); startCall(video === true); }
 
 async function blockPeer() {
@@ -1008,7 +1023,7 @@ async function postMsg(payload, blob) {
 function sendText() {
   var e = $('mi'); if (!e) return;
   var v = e.value.trim(); if (!v) return;
-  e.value = ''; S.d_mi = '';
+  e.value = ''; S.d_mi = ''; typingChanged('');
   postMsg({kind: 'text', body: v});
 }
 
@@ -1408,6 +1423,19 @@ function connect() {
   socket.on('connect', function () { S.online = true; render(); });
   socket.on('disconnect', function () { S.online = false; if (S.call) cleanup(); else render(); });
   socket.on('connect_error', function () { S.online = false; render(); });
+
+  socket.on('presence:update', function (d) {
+    if (!d) return;
+    S.presence[d.userId] = !!d.online;
+    S.chats.forEach(function (c) { if (String(c.id) === String(d.userId)) c.online = !!d.online; });
+    if (S.chat && String(S.chat.id) === String(d.userId)) { S.chat.online = !!d.online; S.peerTyping = false; }
+    render();
+  });
+  socket.on('typing:update', function (d) {
+    if (!d || !S.chat || String(S.chat.id) !== String(d.userId)) return;
+    S.peerTyping = !!d.typing;
+    var el = $('peerStatus'); if (el) el.textContent = chatPeerStatus();
+  });
 
   // messages
   socket.on('msg:new', function (m) {
