@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 620" role="img" aria-label="Ethio Call people connecting by messages and calls">
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0b58b7"/><stop offset="1" stop-color="#061c4d"/></linearGradient>
+ <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe66a"/><stop offset="1" stop-color="#f5bf16"/></linearGradient>
+ <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#00143d" flood-opacity=".35"/></filter>
+</defs>
+<circle cx="450" cy="310" r="255" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="3"/>
+<circle cx="450" cy="310" r="210" fill="none" stroke="#ffd83d" stroke-opacity=".3" stroke-width="2" stroke-dasharray="8 14"/>
+<path d="M85 500 Q450 620 815 500" fill="none" stroke="url(#gold)" stroke-width="18" stroke-linecap="round"/>
+<!-- floating chat bubbles -->
+<g filter="url(#shadow)"><rect x="105" y="130" width="190" height="105" rx="30" fill="#fff"/><path d="M160 232l-12 35 48-32" fill="#fff"/><circle cx="160" cy="182" r="9" fill="#0872d7"/><circle cx="200" cy="182" r="9" fill="#0872d7"/><circle cx="240" cy="182" r="9" fill="#0872d7"/>
+<rect x="610" y="100" width="185" height="95" rx="28" fill="url(#gold)"/><path d="M720 190l18 32 22-31" fill="url(#gold)"/><path d="M650 143h105M650 165h72" stroke="#07306c" stroke-width="10" stroke-linecap="round"/></g>
+<!-- phone -->
+<g transform="translate(354 115) rotate(-5 100 180)" filter="url(#shadow)"><rect x="0" y="0" width="205" height="365" rx="34" fill="#f8fbff" stroke="#ffd83d" stroke-width="9"/><rect x="13" y="24" width="179" height="315" rx="22" fill="url(#bg)"/><rect x="72" y="10" width="62" height="7" rx="4" fill="#15396b"/>
+<circle cx="103" cy="105" r="43" fill="#ffd83d"/><path d="M82 106q21-29 42 0v19H82z" fill="#0755ad"/><circle cx="103" cy="94" r="16" fill="#8d563e"/>
+<rect x="34" y="177" width="135" height="32" rx="15" fill="#fff"/><rect x="34" y="220" width="110" height="28" rx="14" fill="#ffd83d"/><rect x="34" y="260" width="135" height="28" rx="14" fill="#fff"/><circle cx="102" cy="315" r="10" fill="#ffd83d"/></g>
+<!-- people -->
+<g filter="url(#shadow)">
+ <path d="M90 480q5-135 112-135t112 135v34H90z" fill="#f5c51c"/><circle cx="202" cy="285" r="75" fill="#7d4b38"/><path d="M128 287q-2-103 78-104 86 8 74 108-22-50-82-49-38 0-70 45" fill="#171a28"/><path d="M165 303q38 31 75 0" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round"/>
+ <path d="M590 480q5-135 112-135t112 135v34H590z" fill="#0c4b9e"/><circle cx="702" cy="285" r="75" fill="#9b6248"/><path d="M627 282q0-99 78-100 81 7 72 102-25-49-81-49-39 0-69 47" fill="#171a28"/><path d="M665 303q38 31 75 0" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round"/>
+</g>
+<g fill="#ffd83d"><circle cx="90" cy="310" r="9"/><circle cx="812" cy="300" r="10"/><circle cx="300" cy="65" r="7"/><circle cx="620" cy="535" r="8"/></g>
+<g fill="#fff" opacity=".85"><path d="M75 385q20-26 40 0M785 390q20-26 40 0" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round"/></g>
+</svg>
