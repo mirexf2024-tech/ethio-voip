@@ -335,6 +335,17 @@ async function nativePushOn() {
   try {
     if (!nativePushListenersReady) {
       nativePushListenersReady = true;
+      try {
+        await plugin.createChannel({
+          id: 'ethio_calls',
+          name: 'Ethio Call alerts',
+          description: 'Incoming calls and new messages',
+          importance: 5,
+          visibility: 1,
+          sound: 'default',
+          vibration: true
+        });
+      } catch (e) {}
       await plugin.addListener('registration', function (token) {
         if (token && token.value) {
           try { localStorage.setItem('ec_fcm_token', token.value); } catch (e) {}
