@@ -9,6 +9,7 @@ const SAFE_MIME = [
 function setupChat(app, io, { pool, auth, normalizePhone, push }) {
   const room = (id) => 'u' + id;
   const sent = new Map(); // userId -> timestamps (simple rate limit)
+  const onlineSockets = new Map(); // userId -> current socket id
 
   function rateOk(uid) {
     const now = Date.now();
@@ -39,6 +40,22 @@ function setupChat(app, io, { pool, auth, normalizePhone, push }) {
   io.on('connection', (socket) => {
     const uid = socket.user.id;
     socket.join(room(uid));
+    onlineSockets.set(uid, socket.id);
+    io.emit('presence:update', { userId: uid, online: true });
+
+    socket.on('typing:update', async (d) => {
+      try {
+        const peer = await findUser(d && d.phone);
+        if (!peer || peer.id === uid || !onlineSockets.has(peer.id)) return;
+        io.to(room(peer.id)).emit('typing:update', { userId: uid, typing: !!(d && d.typing) });
+      } catch (e) { console.error(e); }
+    });
+
+    socket.on('disconnect', () => {
+      if (onlineSockets.get(uid) !== socket.id) return;
+      onlineSockets.delete(uid);
+      io.emit('presence:update', { userId: uid, online: false });
+    });
 
     socket.on('msg:read', async (d) => {
       try {
@@ -71,7 +88,7 @@ function setupChat(app, io, { pool, auth, normalizePhone, push }) {
          order by l.id desc`,
         [req.user.id]
       );
-      res.json(r.rows);
+      res.json(r.rows.map((x) => ({ ...x, online: onlineSockets.has(x.id) })));
     } catch (e) {
       console.error(e);
       res.status(500).json({ error: 'Server error' });
@@ -98,7 +115,7 @@ function setupChat(app, io, { pool, auth, normalizePhone, push }) {
       );
       if (r.rowCount) io.to(room(peer.id)).emit('msg:read', { phone: req.user.phone });
       res.json({
-        peer: { phone: peer.phone, name: peer.name, avatar_url: peer.avatar_url, about: peer.about },
+        peer: { id: peer.id, phone: peer.phone, name: peer.name, avatar_url: peer.avatar_url, about: peer.about, online: onlineSockets.has(peer.id) },
         messages: m.rows.reverse(),
       });
     } catch (e) {
