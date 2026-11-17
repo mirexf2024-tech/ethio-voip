@@ -1567,6 +1567,18 @@ function connect() {
   socket.on('gmsg:del', function (d) {
     if (S.grp && S.grp.id === d.group_id) { S.grp.messages = S.grp.messages.filter(function (m) { return m.id !== d.id; }); renderMsgs(); }
   });
+  socket.on('gmsg:edit', function (d) {
+    if (S.grp && S.grp.id === d.group_id) {
+      var m = S.grp.messages.find(function(x){return x.id===d.id;});
+      if (m) { m.body = d.body; m.edited_at = d.edited_at; renderMsgs(); }
+    }
+  });
+  socket.on('gmsg:react', function (d) {
+    if (S.grp && S.grp.id === d.group_id) {
+      var m = S.grp.messages.find(function(x){return x.id===d.id;});
+      if (m) { m.reactions = d.reactions || []; renderMsgs(); }
+    }
+  });
   socket.on('group:new', function (d) { loadGroups(); toast('👥 ' + d.name); });
   socket.on('group:update', function (d) { if (S.grp && S.grp.id === d.id) refreshGroup(); loadGroups(); });
   socket.on('group:gone', function (d) { if (S.grp && S.grp.id === d.id) { S.grp = null; render(); } loadGroups(); });
