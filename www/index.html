@@ -418,10 +418,10 @@ function loginView() {
   var m = S.meth;
   if (IS_NATIVE_APP && localStorage.getItem('ec_welcome_seen') !== '1') {
     var copy = S.lang === 'om'
-      ? {tag:'Walitti hidhamiinsa salphaa', lead:'Firoottan kee fi hiriyoota kee waliin wal qunnami.', start:'Seensa', login:'Login'}
+      ? {tag:'Stay Connected', lead:'Firoottan kee fi hiriyoota kee waliin wal qunnami.', register:'Galmaa’i', login:'Seeni'}
       : S.lang === 'am'
-      ? {tag:'በቀላሉ ተገናኙ', lead:'ከቤተሰብዎና ጓደኞችዎ ጋር ይገናኙ።', start:'ጀምር', login:'Login'}
-      : {tag:'Stay Connected', lead:'Connect with your family and friends, wherever they are.', start:'Get Started', login:'Login'};
+      ? {tag:'Stay Connected', lead:'ከቤተሰብዎና ጓደኞችዎ ጋር ይገናኙ።', register:'ይመዝገቡ', login:'ግባ'}
+      : {tag:'Stay Connected', lead:'Connect with your family and friends, wherever they are.', register:'Register', login:'Login'};
     return `<main class="ec-welcome">
       <div class="ec-welcome-lang">${langSel()}</div>
       <div class="ec-welcome-brand">
@@ -436,8 +436,8 @@ function loginView() {
       </div>
       <section class="ec-welcome-bottom">
         <h1>${copy.lead}</h1>
-        <button class="ec-start" onclick="finishWelcome()">${copy.start}</button>
-        <button class="ec-login" onclick="finishWelcome()">${copy.login}</button>
+        <button class="ec-start" onclick="finishWelcome()">${copy.login}</button>
+        <button class="ec-login" onclick="finishWelcome()">${copy.register}</button>
         <div class="ec-foot">VOICE · VIDEO · MESSAGES</div>
       </section>
     </main>`;
@@ -1467,7 +1467,13 @@ function toggleMute() {
 function connect() {
   if (socket) socket.close();
   socket = io(API_BASE, {auth: {token: S.token}, transports: ['websocket', 'polling']});
-  socket.on('connect', function () { S.online = true; render(); });
+  socket.on('connect', function () {
+    S.online = true;
+    // Sync conversations and any messages received while this device was offline.
+    loadChats();
+    if (S.chat && S.chat.phone) openChat(S.chat.phone);
+    render();
+  });
   socket.on('disconnect', function () { S.online = false; if (S.call) cleanup(); else render(); });
   socket.on('connect_error', function () { S.online = false; render(); });
 
