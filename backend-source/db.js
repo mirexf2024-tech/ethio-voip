@@ -63,6 +63,7 @@ async function init() {
   alter table users add column if not exists username text;
   create unique index if not exists users_username_unique on users(lower(username)) where username is not null and username <> '';
   alter table messages add column if not exists edited_at timestamptz;
+  alter table messages add column if not exists reply_to int references messages(id) on delete set null;
   create table if not exists message_reactions(
     msg_id int not null references messages(id) on delete cascade,
     user_id int not null references users(id) on delete cascade,
