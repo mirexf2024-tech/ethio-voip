@@ -65,6 +65,74 @@ jobs:
           p.write_text(s)
           PY
 
+      - name: Install native audio route plugin
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          base = Path("android/app/src/main/java/com/mirexf2024/ethiocall")
+          base.mkdir(parents=True, exist_ok=True)
+          plugin = base / "AudioRoutePlugin.java"
+          plugin.write_text("""package com.mirexf2024.ethiocall;
+
+          import android.content.Context;
+          import android.media.AudioDeviceInfo;
+          import android.media.AudioManager;
+          import android.os.Build;
+          import com.getcapacitor.Plugin;
+          import com.getcapacitor.PluginCall;
+          import com.getcapacitor.PluginMethod;
+          import com.getcapacitor.annotation.CapacitorPlugin;
+
+          @CapacitorPlugin(name = "AudioRoute")
+          public class AudioRoutePlugin extends Plugin {
+              @PluginMethod
+              public void setSpeaker(PluginCall call) {
+                  boolean enabled = Boolean.TRUE.equals(call.getBoolean("enabled"));
+                  AudioManager manager = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
+                  manager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+                  boolean routed = false;
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                      int wanted = enabled ? AudioDeviceInfo.TYPE_BUILTIN_SPEAKER : AudioDeviceInfo.TYPE_BUILTIN_EARPIECE;
+                      for (AudioDeviceInfo device : manager.getAvailableCommunicationDevices()) {
+                          if (device.getType() == wanted) {
+                              routed = manager.setCommunicationDevice(device);
+                              break;
+                          }
+                      }
+                  }
+                  if (!routed && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                      manager.setSpeakerphoneOn(enabled);
+                      routed = true;
+                  }
+                  if (!routed) {
+                      call.reject("Requested audio output is unavailable");
+                      return;
+                  }
+                  call.resolve();
+              }
+
+              @PluginMethod
+              public void reset(PluginCall call) {
+                  AudioManager manager = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) manager.clearCommunicationDevice();
+                  manager.setSpeakerphoneOn(false);
+                  manager.setMode(AudioManager.MODE_NORMAL);
+                  call.resolve();
+              }
+          }
+          """.replace("\\n          ", "\\n"))
+
+          activity = Path("android/app/src/main/java/com/mirexf2024/ethiocall/MainActivity.java")
+          code = activity.read_text()
+          if "AudioRoutePlugin.class" not in code:
+              code = code.replace(
+                  "public class MainActivity extends BridgeActivity {",
+                  "public class MainActivity extends BridgeActivity {\\n    @Override\\n    public void onCreate(android.os.Bundle savedInstanceState) {\\n        registerPlugin(AudioRoutePlugin.class);\\n        super.onCreate(savedInstanceState);\\n    }"
+              )
+              activity.write_text(code)
+          PY
+
       - name: Restore permanent signing key
         env:
           KEY_DATA: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
