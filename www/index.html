@@ -225,6 +225,43 @@ function speak(text) {
   var u = new SpeechSynthesisUtterance(text); u.voice = v; u.lang = v.lang;
   speechSynthesis.speak(u);
 }
+function readMessage(btn) {
+  var text = btn && btn.getAttribute('data-read');
+  if (!text) return;
+  if (!('speechSynthesis' in window) || !window.SpeechSynthesisUtterance) return toast(({om:'Sagaleen dubbisuu bilbila kana irratti hin deeggaramu.',am:'የድምፅ ንባብ በዚህ ስልክ አይደገፍም።',en:'Read aloud is not supported on this phone.'})[S.lang]);
+  var prefix = ({om:'om',am:'am',en:'en'})[S.lang] || 'en';
+  var voices = speechSynthesis.getVoices() || [];
+  var voice = voices.filter(function(v){return v.lang && v.lang.toLowerCase().indexOf(prefix) === 0;})[0];
+  if (!voice) return toast(({om:'Sagaleen Afaan Oromoo bilbila kana irratti hin argamne.',am:'የአማርኛ ድምፅ በዚህ ስልክ ላይ አልተገኘም።',en:'No voice for this language is installed on this phone.'})[S.lang],5000);
+  try { speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(text); u.voice = voice; u.lang = voice.lang; speechSynthesis.speak(u); }
+  catch(e) { toast('Could not read this message.'); }
+}
+function startDictation() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return toast('Speech recognition is not supported in this browser.');
+  if (S.recording || S.call) return toast('Finish the current recording or call first.');
+  var rec = new SR(), lang = ({om:'om-ET',am:'am-ET',en:'en-US'})[S.lang] || 'en-US';
+  rec.lang = lang; rec.continuous = false; rec.interimResults = true;
+  var input = $('mi'); if (!input) return;
+  var base = input.value || ''; var finalText = '';
+  rec.onresult = function(e) {
+    var interim = '';
+    for (var i=e.resultIndex; i<e.results.length; i++) {
+      if (e.results[i].isFinal) finalText += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    input.value = (base ? base + ' ' : '') + finalText + interim;
+    S.d_mi = input.value;
+  };
+  rec.onerror = function(e) {
+    var msg = e.error === 'not-allowed' ? 'Microphone permission was denied.' : 'Speech recognition failed or this language is not supported.';
+    toast(msg,5000);
+  };
+  rec.onend = function(){ if (input) S.d_mi = input.value; };
+  toast(({om:'Dubbachuun barruutti jijjiirama. Sagaleen tajaajila browseriin qoratamuu danda’a.',am:'ንግግርዎ ወደ ጽሑፍ ይቀየራል። ድምፅዎ በአሳሹ አገልግሎት ሊሰራ ይችላል።',en:'Speak to enter text. Audio may be processed by your browser provider.'})[S.lang],5500);
+  try { rec.start(); } catch(e) { toast('Could not start speech recognition.'); }
+}
+
 function announce(key) {
   var text = t('ann_' + key);
   toast(text, 7000);
@@ -644,7 +681,7 @@ function bubble(m, g) {
   var mk = (g ? 'g' : '') + m.id;               // key of the photo/voice/file in the cache
   var k = g ? "'g" + m.id + "'" : String(m.id); // the same key written as JavaScript text
   var inner = '';
-  if (m.kind === 'text') inner = esc(m.body) + (m.tr ? `<div class="s" style="margin-top:4px;border-top:1px dashed #ccc;padding-top:4px">🌐 ${esc(m.tr)}</div>` : (S.meth.tr ? `<div><a href="#" class="s" onclick="trMsg(${m.id},${g ? 1 : 0});return false">🌐 ${t('translate')}</a></div>` : ''));
+  if (m.kind === 'text') inner = esc(m.body) + `<div style="display:flex;gap:12px;align-items:center;margin-top:5px"><button class="x" style="width:auto;min-height:30px;padding:4px 9px;margin:0;font-size:13px" data-read="${esc(m.body)}" onclick="readMessage(this)">🔊 ${({om:'Dubbisi',am:'አንብብ',en:'Read aloud'})[S.lang] || 'Read aloud'}</button>${m.tr ? `<span class="s">🌐 ${esc(m.tr)}</span>` : (S.meth.tr ? `<a href="#" class="s" onclick="trMsg(${m.id},${g ? 1 : 0});return false">🌐 ${t('translate')}</a>` : '')}</div>`;
   else if (m.kind === 'image') {
     inner = M[mk] ? `<img class="pic" src="${M[mk]}" onclick="window.open(M[${k}])">`
       : S.set.saver ? `<div class="ph" onclick="loadImg(${k})">📷 ${t('tapLoad')}</div>`
@@ -673,7 +710,7 @@ function composer() {
   <label class="ic">📎<input type="file" style="display:none" onchange="pickFile(this,'file')"></label>
   <label class="ic">📷<input type="file" accept="image/*" style="display:none" onchange="pickFile(this,'image')"></label>
   <input id="mi" placeholder="${t('typeMsg')}" value="${esc(S.d_mi || '')}" onkeydown="if(event.key==='Enter')sendText()">
-  <button onclick="sendText()">➤</button><button class="x" onclick="voiceStart()">🎤</button></div>`;
+  <button onclick="sendText()">➤</button><button class="x" onclick="voiceStart()">🎤</button>${(window.SpeechRecognition || window.webkitSpeechRecognition) ? `<button class="x" title="Speech to text" onclick="startDictation()">🗣️</button>` : ''}</div>`;
 }
 
 function chatView() {
