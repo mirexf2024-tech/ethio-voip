@@ -189,7 +189,7 @@ var T = {
 };
 var S = {lang: localStorage.getItem('lg') || 'om', token: localStorage.getItem('tk'), me: null, coins: 0, hist: [], pkgs: [],
   bonus: null, meth: {sms: false, tg: false, tr: false}, tgLink: '', chats: [], chat: null, groups: [], grp: null, newGrp: false, ads: null, blocks: [], payInfo: null, payPkg: null, reqs: [], recording: false, stick: false, set: {sound: true, vibrate: true, saver: true},
-  tab: 'chats', dial: '', call: null, online: false, presence: {}, peerTyping: false, typingTimer: null, msg: '', loading: false, otpSent: false, devCode: '', photo: null};
+  phoneContacts: [], contactsLoading: false, tab: 'chats', dial: '', call: null, online: false, presence: {}, peerTyping: false, typingTimer: null, msg: '', loading: false, otpSent: false, devCode: '', photo: null};
 try { Object.assign(S.set, JSON.parse(localStorage.getItem('st') || '{}')); } catch (e) {}
 try {
   var refM = /[?&]ref=([A-Za-z0-9]{8})/.exec(location.search);
@@ -503,7 +503,7 @@ function loginView() {
       </div>
       <div class="ec-hero-art">
         <div class="ec-orbit ec-orbit-a"></div><div class="ec-orbit ec-orbit-b"></div>
-        <img class="ec-hero-image" src="./ethio-call-welcome.svg" alt="Ethio Call: namoota ergaa fi bilbilaan wal qunnamsiisu">
+        <img class="ec-hero-image" src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20900%20620%22%20role%3D%22img%22%20aria-label%3D%22Ethio%20Call%20people%20connecting%20by%20messages%20and%20calls%22%3E%0A%3Cdefs%3E%0A%20%3ClinearGradient%20id%3D%22bg%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20stop-color%3D%22%230b58b7%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23061c4d%22%2F%3E%3C%2FlinearGradient%3E%0A%20%3ClinearGradient%20id%3D%22gold%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20stop-color%3D%22%23ffe66a%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23f5bf16%22%2F%3E%3C%2FlinearGradient%3E%0A%20%3Cfilter%20id%3D%22shadow%22%20x%3D%22-30%25%22%20y%3D%22-30%25%22%20width%3D%22160%25%22%20height%3D%22160%25%22%3E%3CfeDropShadow%20dx%3D%220%22%20dy%3D%2212%22%20stdDeviation%3D%2212%22%20flood-color%3D%22%2300143d%22%20flood-opacity%3D%22.35%22%2F%3E%3C%2Ffilter%3E%0A%3C%2Fdefs%3E%0A%3Ccircle%20cx%3D%22450%22%20cy%3D%22310%22%20r%3D%22255%22%20fill%3D%22none%22%20stroke%3D%22%23ffffff%22%20stroke-opacity%3D%22.18%22%20stroke-width%3D%223%22%2F%3E%0A%3Ccircle%20cx%3D%22450%22%20cy%3D%22310%22%20r%3D%22210%22%20fill%3D%22none%22%20stroke%3D%22%23ffd83d%22%20stroke-opacity%3D%22.3%22%20stroke-width%3D%222%22%20stroke-dasharray%3D%228%2014%22%2F%3E%0A%3Cpath%20d%3D%22M85%20500%20Q450%20620%20815%20500%22%20fill%3D%22none%22%20stroke%3D%22url(%23gold)%22%20stroke-width%3D%2218%22%20stroke-linecap%3D%22round%22%2F%3E%0A%3C!--%20floating%20chat%20bubbles%20--%3E%0A%3Cg%20filter%3D%22url(%23shadow)%22%3E%3Crect%20x%3D%22105%22%20y%3D%22130%22%20width%3D%22190%22%20height%3D%22105%22%20rx%3D%2230%22%20fill%3D%22%23fff%22%2F%3E%3Cpath%20d%3D%22M160%20232l-12%2035%2048-32%22%20fill%3D%22%23fff%22%2F%3E%3Ccircle%20cx%3D%22160%22%20cy%3D%22182%22%20r%3D%229%22%20fill%3D%22%230872d7%22%2F%3E%3Ccircle%20cx%3D%22200%22%20cy%3D%22182%22%20r%3D%229%22%20fill%3D%22%230872d7%22%2F%3E%3Ccircle%20cx%3D%22240%22%20cy%3D%22182%22%20r%3D%229%22%20fill%3D%22%230872d7%22%2F%3E%0A%3Crect%20x%3D%22610%22%20y%3D%22100%22%20width%3D%22185%22%20height%3D%2295%22%20rx%3D%2228%22%20fill%3D%22url(%23gold)%22%2F%3E%3Cpath%20d%3D%22M720%20190l18%2032%2022-31%22%20fill%3D%22url(%23gold)%22%2F%3E%3Cpath%20d%3D%22M650%20143h105M650%20165h72%22%20stroke%3D%22%2307306c%22%20stroke-width%3D%2210%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fg%3E%0A%3C!--%20phone%20--%3E%0A%3Cg%20transform%3D%22translate(354%20115)%20rotate(-5%20100%20180)%22%20filter%3D%22url(%23shadow)%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%22205%22%20height%3D%22365%22%20rx%3D%2234%22%20fill%3D%22%23f8fbff%22%20stroke%3D%22%23ffd83d%22%20stroke-width%3D%229%22%2F%3E%3Crect%20x%3D%2213%22%20y%3D%2224%22%20width%3D%22179%22%20height%3D%22315%22%20rx%3D%2222%22%20fill%3D%22url(%23bg)%22%2F%3E%3Crect%20x%3D%2272%22%20y%3D%2210%22%20width%3D%2262%22%20height%3D%227%22%20rx%3D%224%22%20fill%3D%22%2315396b%22%2F%3E%0A%3Ccircle%20cx%3D%22103%22%20cy%3D%22105%22%20r%3D%2243%22%20fill%3D%22%23ffd83d%22%2F%3E%3Cpath%20d%3D%22M82%20106q21-29%2042%200v19H82z%22%20fill%3D%22%230755ad%22%2F%3E%3Ccircle%20cx%3D%22103%22%20cy%3D%2294%22%20r%3D%2216%22%20fill%3D%22%238d563e%22%2F%3E%0A%3Crect%20x%3D%2234%22%20y%3D%22177%22%20width%3D%22135%22%20height%3D%2232%22%20rx%3D%2215%22%20fill%3D%22%23fff%22%2F%3E%3Crect%20x%3D%2234%22%20y%3D%22220%22%20width%3D%22110%22%20height%3D%2228%22%20rx%3D%2214%22%20fill%3D%22%23ffd83d%22%2F%3E%3Crect%20x%3D%2234%22%20y%3D%22260%22%20width%3D%22135%22%20height%3D%2228%22%20rx%3D%2214%22%20fill%3D%22%23fff%22%2F%3E%3Ccircle%20cx%3D%22102%22%20cy%3D%22315%22%20r%3D%2210%22%20fill%3D%22%23ffd83d%22%2F%3E%3C%2Fg%3E%0A%3C!--%20people%20--%3E%0A%3Cg%20filter%3D%22url(%23shadow)%22%3E%0A%20%3Cpath%20d%3D%22M90%20480q5-135%20112-135t112%20135v34H90z%22%20fill%3D%22%23f5c51c%22%2F%3E%3Ccircle%20cx%3D%22202%22%20cy%3D%22285%22%20r%3D%2275%22%20fill%3D%22%237d4b38%22%2F%3E%3Cpath%20d%3D%22M128%20287q-2-103%2078-104%2086%208%2074%20108-22-50-82-49-38%200-70%2045%22%20fill%3D%22%23171a28%22%2F%3E%3Cpath%20d%3D%22M165%20303q38%2031%2075%200%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%228%22%20stroke-linecap%3D%22round%22%2F%3E%0A%20%3Cpath%20d%3D%22M590%20480q5-135%20112-135t112%20135v34H590z%22%20fill%3D%22%230c4b9e%22%2F%3E%3Ccircle%20cx%3D%22702%22%20cy%3D%22285%22%20r%3D%2275%22%20fill%3D%22%239b6248%22%2F%3E%3Cpath%20d%3D%22M627%20282q0-99%2078-100%2081%207%2072%20102-25-49-81-49-39%200-69%2047%22%20fill%3D%22%23171a28%22%2F%3E%3Cpath%20d%3D%22M665%20303q38%2031%2075%200%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%228%22%20stroke-linecap%3D%22round%22%2F%3E%0A%3C%2Fg%3E%0A%3Cg%20fill%3D%22%23ffd83d%22%3E%3Ccircle%20cx%3D%2290%22%20cy%3D%22310%22%20r%3D%229%22%2F%3E%3Ccircle%20cx%3D%22812%22%20cy%3D%22300%22%20r%3D%2210%22%2F%3E%3Ccircle%20cx%3D%22300%22%20cy%3D%2265%22%20r%3D%227%22%2F%3E%3Ccircle%20cx%3D%22620%22%20cy%3D%22535%22%20r%3D%228%22%2F%3E%3C%2Fg%3E%0A%3Cg%20fill%3D%22%23fff%22%20opacity%3D%22.85%22%3E%3Cpath%20d%3D%22M75%20385q20-26%2040%200M785%20390q20-26%2040%200%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%228%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fg%3E%0A%3C%2Fsvg%3E" alt="Ethio Call: namoota ergaa fi bilbilaan wal qunnamsiisu">
       </div>
       <section class="ec-welcome-bottom">
         <h1>${copy.lead}</h1>
@@ -558,12 +558,37 @@ function chatsTab() {
 /* ---------- contacts: people already connected through chats ---------- */
 function contactsTab() {
   var q = String(S.d_contactSearch || '').toLowerCase();
-  var rows = S.chats.filter(function(c) {
-    return !q || [c.name,c.phone].some(function(v){return String(v||'').toLowerCase().indexOf(q)!==-1;});
-  });
-  return `<div class="card"><b>Contacts</b><input id="contactSearch" type="search" placeholder="Search contacts by name or phone" value="${esc(S.d_contactSearch || '')}" oninput="S.d_contactSearch=this.value;render()">
-  <div class="s">People you have already chatted with on Ethio Call.</div>
-  ${rows.map(function(c){return `<div class="row" onclick="openChat('${esc(c.phone)}')"><span style="display:flex;gap:10px;align-items:center;min-width:0">${avatar(c.avatar_url,(c.name||'#')[0].toUpperCase(),'sm')}<span><b>${esc(c.name||c.phone)}</b><br><span class="s">${esc(c.phone)}</span></span></span><button style="width:auto">Message</button></div>`;}).join('') || '<div class="s c">No contacts yet. Start a chat using a phone number.</div>'}</div>`;
+  var list = S.phoneContacts || [];
+  var rows = list.filter(function(c){return !q || [c.name,c.phone].some(function(v){return String(v||'').toLowerCase().indexOf(q)!==-1;});});
+  var labels = {om:{load:'📱 Bilbila keessaa contacts fe’i',loading:'Contacts fe’aa jira...',empty:'Contacts hin argamne.',privacy:'Contacts kee bilbila kee irratti qofa dubbifama; gara serveritti hin ergamu.',message:'Ergaa ergi',search:'Maqaa ykn lakkoofsa barbaadi'},am:{load:'📱 ከስልክ ኮንታክቶችን አምጣ',loading:'ኮንታክቶች በመጫን ላይ...',empty:'ኮንታክት አልተገኘም።',privacy:'ኮንታክቶችዎ በስልክዎ ላይ ብቻ ይቆያሉ፤ ወደ ሰርቨር አይላኩም።',message:'መልእክት ላክ',search:'ስም ወይም ቁጥር ፈልግ'},en:{load:'📱 Load phone contacts',loading:'Loading contacts...',empty:'No phone contacts found.',privacy:'Your contacts stay on this phone and are not uploaded to our server.',message:'Message',search:'Search name or number'}};
+  var L=labels[S.lang]||labels.en;
+  return `<div class="card"><b>👥 ${t('contacts')}</b>
+    <div class="s" style="margin:8px 0">${L.privacy}</div>
+    <button onclick="loadPhoneContacts()" ${S.contactsLoading?'disabled':''}>${S.contactsLoading?L.loading:L.load}</button>
+    <input id="contactSearch" type="search" placeholder="${L.search}" value="${esc(S.d_contactSearch || '')}" oninput="S.d_contactSearch=this.value;render()">
+    <div class="s">${list.length ? list.length+' contacts' : ''}</div>
+    ${rows.map(function(c){return `<div class="row" onclick="openChat('${esc(c.phone)}')"><span style="display:flex;gap:10px;align-items:center;min-width:0">${avatar(null,(c.name||'#')[0].toUpperCase(),'sm')}<span><b>${esc(c.name||c.phone)}</b><br><span class="s">${esc(c.phone)}</span></span></span><button style="width:auto">${L.message}</button></div>`;}).join('') || '<div class="s c">'+(S.contactsLoading?L.loading:L.empty)+'</div>'}
+  </div>`;
+}
+async function loadPhoneContacts(){
+  if(S.contactsLoading)return;
+  S.contactsLoading=true;render();
+  try{
+    var plugin=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.PhoneContacts;
+    var result=null;
+    if(IS_NATIVE_APP&&plugin&&plugin.getContacts){
+      result=await plugin.getContacts();
+      S.phoneContacts=(result&&result.contacts||[]).map(function(c){return {name:String(c.name||''),phone:String(c.phone||'')};}).filter(function(c){return c.phone;});
+    }else if(navigator.contacts&&navigator.contacts.select){
+      result=await navigator.contacts.select(['name','tel'],{multiple:true});
+      S.phoneContacts=(result||[]).reduce(function(all,c){(c.tel||[]).forEach(function(p){all.push({name:(c.name&&c.name[0])||'',phone:String(p||'')});});return all;},[]).filter(function(c){return c.phone;});
+    }else{
+      S.contactsLoading=false;render();
+      return toast(S.lang==='om'?'Phonebook fe’uun Android app keessatti qofa ni hojjeta.':S.lang==='am'?'የስልክ ኮንታክት ማምጣት በAndroid መተግበሪያ ላይ ይሰራል።':'Phonebook access is available in the Android app.');
+    }
+    var seen={};S.phoneContacts=S.phoneContacts.filter(function(c){var k=c.phone.replace(/[^0-9+]/g,'');if(!k||seen[k])return false;seen[k]=1;return true;}).sort(function(a,b){return a.name.localeCompare(b.name);});
+  }catch(e){toast(S.lang==='om'?'Contacts argachuuf eeyyama bilbila keessaa kenni.':S.lang==='am'?'የኮንታክት ፈቃድ ይስጡ።':'Please allow phone Contacts permission.');}
+  S.contactsLoading=false;render();
 }
 
 /* ---------- groups tab + group screen ---------- */
