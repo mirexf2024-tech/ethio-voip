@@ -266,7 +266,8 @@ jobs:
               )
               activity.write_text(code)
           PY
-\n      - name: Restore permanent signing key
+
+      - name: Restore permanent signing key
         env:
           KEY_DATA: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
