@@ -245,6 +245,107 @@ function setupChat(app, io, { pool, auth, normalizePhone, push }) {
       c.release();
     }
   });
+  // ---- private-chat message editing, deletion, reactions, pins and search ----
+  const CHAT_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+
+  app.put('/messages/:mid', auth, async (req, res) => {
+    try {
+      const mid = parseInt(req.params.mid, 10);
+      const body = String((req.body && req.body.body) || '').trim().slice(0, 2000);
+      if (!mid || !body) return res.status(400).json({ error: 'Bad message' });
+      const r = await pool.query(
+        `update messages set body=$3, edited_at=now()
+         where id=$1 and from_id=$2 and kind='text'
+           and created_at > now() - interval '48 hours'
+         returning id, body, edited_at`,
+        [mid, req.user.id, body]
+      );
+      if (!r.rowCount) return res.status(403).json({ error: 'You cannot edit this message' });
+      const peer = await pool.query('select to_id from messages where id=$1', [mid]);
+      if (peer.rowCount) io.to(room(peer.rows[0].to_id)).emit('msg:edit', r.rows[0]);
+      res.json({ ok: true, ...r.rows[0] });
+    } catch (e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+  });
+
+  app.delete('/messages/:mid', auth, async (req, res) => {
+    try {
+      const mid = parseInt(req.params.mid, 10);
+      if (!mid) return res.status(400).json({ error: 'Bad id' });
+      const r = await pool.query('delete from messages where id=$1 and from_id=$2 returning id, to_id', [mid, req.user.id]);
+      if (!r.rowCount) return res.status(403).json({ error: 'You can only delete your own message' });
+      io.to(room(r.rows[0].to_id)).emit('msg:del', { id: mid });
+      res.json({ ok: true });
+    } catch (e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+  });
+
+  app.post('/messages/:mid/react', auth, async (req, res) => {
+    try {
+      const mid = parseInt(req.params.mid, 10);
+      const emoji = String((req.body && req.body.emoji) || '');
+      if (!mid || !CHAT_REACTIONS.includes(emoji)) return res.status(400).json({ error: 'Bad reaction' });
+      const msg = await pool.query('select from_id,to_id from messages where id=$1 and (from_id=$2 or to_id=$2)', [mid, req.user.id]);
+      if (!msg.rowCount) return res.status(404).json({ error: 'Message not found' });
+      const old = await pool.query('select emoji from message_reactions where msg_id=$1 and user_id=$2', [mid, req.user.id]);
+      if (old.rowCount && old.rows[0].emoji === emoji)
+        await pool.query('delete from message_reactions where msg_id=$1 and user_id=$2', [mid, req.user.id]);
+      else
+        await pool.query(`insert into message_reactions(msg_id,user_id,emoji) values($1,$2,$3)
+          on conflict(msg_id,user_id) do update set emoji=excluded.emoji`, [mid, req.user.id, emoji]);
+      const rx = await pool.query(`select coalesce(json_agg(json_build_object('e',r.emoji,'p',u.phone)), '[]'::json) as reactions
+        from message_reactions r join users u on u.id=r.user_id where r.msg_id=$1`, [mid]);
+      const reactions = rx.rows[0].reactions;
+      const other = msg.rows[0].from_id === req.user.id ? msg.rows[0].to_id : msg.rows[0].from_id;
+      io.to(room(other)).emit('msg:react', { id: mid, reactions });
+      res.json({ ok: true, reactions });
+    } catch (e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+  });
+
+  app.post('/messages/:mid/pin', auth, async (req, res) => {
+    try {
+      const mid = parseInt(req.params.mid, 10);
+      const msg = await pool.query('select from_id,to_id from messages where id=$1 and (from_id=$2 or to_id=$2)', [mid, req.user.id]);
+      if (!mid || !msg.rowCount) return res.status(404).json({ error: 'Message not found' });
+      const peerId = msg.rows[0].from_id === req.user.id ? msg.rows[0].to_id : msg.rows[0].from_id;
+      const old = await pool.query('select 1 from pinned_messages where user_id=$1 and peer_id=$2 and msg_id=$3', [req.user.id, peerId, mid]);
+      if (old.rowCount) await pool.query('delete from pinned_messages where user_id=$1 and peer_id=$2 and msg_id=$3', [req.user.id, peerId, mid]);
+      else await pool.query('insert into pinned_messages(user_id,peer_id,msg_id) values($1,$2,$3) on conflict do nothing', [req.user.id, peerId, mid]);
+      res.json({ ok: true, pinned: !old.rowCount });
+    } catch (e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+  });
+
+  app.get('/messages/:phone/search', auth, async (req, res) => {
+    try {
+      const peer = await findUser(req.params.phone);
+      if (!peer) return res.status(404).json({ error: 'User not found' });
+      const q = String(req.query.q || '').trim().slice(0, 80);
+      if (q.length < 2) return res.json([]);
+      const r = await pool.query(`select id,(from_id=$1) as mine,body,created_at,edited_at
+        from messages where ((from_id=$1 and to_id=$2) or (from_id=$2 and to_id=$1))
+          and kind='text' and body ilike '%' || $3 || '%'
+        order by id desc limit 30`, [req.user.id, peer.id, q]);
+      res.json(r.rows);
+    } catch (e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+  });
+
+  app.post('/messages/forward', auth, async (req, res) => {
+    try {
+      const mid = parseInt(req.body && req.body.message_id, 10);
+      const peer = await findUser(req.body && req.body.to);
+      if (!mid || !peer) return res.status(400).json({ error: 'Bad message or recipient' });
+      if (peer.id === req.user.id || await isBlocked(req.user.id, peer.id)) return res.status(403).json({ error: 'Recipient unavailable' });
+      const src = await pool.query('select kind,body,media_url,media_name,media_size,duration from messages where id=$1 and (from_id=$2 or to_id=$2)', [mid, req.user.id]);
+      if (!src.rowCount) return res.status(404).json({ error: 'Message not found' });
+      const x = src.rows[0];
+      const r = await pool.query(`insert into messages(from_id,to_id,kind,body,media_url,media_name,media_size,duration)
+        values($1,$2,$3,$4,$5,$6,$7,$8)
+        returning id,kind,body,media_name,media_size,duration,created_at`,
+        [req.user.id,peer.id,x.kind,x.body,x.media_url,x.media_name,x.media_size,x.duration]);
+      const msg = { ...r.rows[0], has_media: x.kind !== 'text' };
+      io.to(room(peer.id)).emit('msg:new', { ...msg, from_phone: req.user.phone });
+      res.json({ ok: true, msg });
+    } catch (e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+  });
+
 }
 
 module.exports = { setupChat };
