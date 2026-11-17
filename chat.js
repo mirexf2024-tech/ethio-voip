@@ -103,7 +103,8 @@ function setupChat(app, io, { pool, auth, normalizePhone, push }) {
       const me = req.user.id;
       const m = await pool.query(
         `select id, (from_id=$1) as mine, kind, body, media_name, media_size, duration,
-                (media_url is not null) as has_media, created_at, read_at
+                (media_url is not null) as has_media, created_at, read_at, edited_at,
+                coalesce((select json_agg(json_build_object('e',r.emoji,'p',u.phone)) from message_reactions r join users u on u.id=r.user_id where r.msg_id=messages.id), '[]'::json) as reactions
          from messages
          where (from_id=$1 and to_id=$2) or (from_id=$2 and to_id=$1)
          order by id desc limit 100`,
