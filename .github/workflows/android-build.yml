@@ -1,4 +1,4 @@
-name: Ethio Call Release APK
+name: Ethio Call Signed Release APK
 
 on:
   workflow_dispatch:
@@ -65,39 +65,29 @@ jobs:
           p.write_text(s)
           PY
 
-      - name: Generate signing key
+      - name: Restore permanent signing key
         env:
-          STORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_DATA: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
           set -e
 
-          test -n "$STORE_PASS"
+          test -n "$KEY_DATA"
+          test -n "$STORE_PASSWORD"
+          test -n "$KEY_PASSWORD"
           test -n "$KEY_ALIAS"
 
-          keytool -genkeypair -v \
-            -storetype JKS \
-            -keystore ethio-call-upload-key.jks \
-            -storepass "$STORE_PASS" \
-            -keypass "$STORE_PASS" \
-            -alias "$KEY_ALIAS" \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -dname "CN=Ethio Call, O=Ethio Call, C=ET"
+          printf '%s' "$KEY_DATA" | base64 --decode > ethio-call-upload-key.jks
 
-      - name: Verify signing key
-        env:
-          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-        run: |
           keytool -list \
             -keystore ethio-call-upload-key.jks \
             -storetype JKS \
             -storepass "$STORE_PASSWORD" \
             -alias "$KEY_ALIAS"
 
-      - name: Build unsigned Release APK
+      - name: Build Release APK
         working-directory: android
         run: |
           chmod +x ./gradlew
@@ -106,6 +96,7 @@ jobs:
       - name: Sign Release APK
         env:
           STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
           set -e
@@ -124,7 +115,7 @@ jobs:
             --ks ethio-call-upload-key.jks \
             --ks-key-alias "$KEY_ALIAS" \
             --ks-pass env:STORE_PASSWORD \
-            --key-pass env:STORE_PASSWORD \
+            --key-pass env:KEY_PASSWORD \
             --out "$SIGNED_APK" \
             "$UNSIGNED_APK"
 
@@ -135,11 +126,4 @@ jobs:
         with:
           name: ethio-call-signed-release-apk
           path: android/app/build/outputs/apk/release/ethio-call-release.apk
-          retention-days: 7
-
-      - name: Backup signing key
-        uses: actions/upload-artifact@v4
-        with:
-          name: ethio-call-signing-key-backup
-          path: ethio-call-upload-key.jks
-          retention-days: 90
+          retention-days: 30
