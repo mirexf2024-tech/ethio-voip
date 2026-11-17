@@ -14,7 +14,7 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Set up Node
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -68,14 +68,18 @@ jobs:
       - name: Generate signing key
         env:
           STORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
           set -e
+
+          test -n "$STORE_PASS"
+          test -n "$KEY_ALIAS"
+
           keytool -genkeypair -v \
+            -storetype JKS \
             -keystore ethio-call-upload-key.jks \
             -storepass "$STORE_PASS" \
-            -keypass "$KEY_PASS" \
+            -keypass "$STORE_PASS" \
             -alias "$KEY_ALIAS" \
             -keyalg RSA \
             -keysize 2048 \
@@ -89,50 +93,48 @@ jobs:
         run: |
           keytool -list \
             -keystore ethio-call-upload-key.jks \
+            -storetype JKS \
             -storepass "$STORE_PASSWORD" \
             -alias "$KEY_ALIAS"
 
-      - name: Configure Android signing
-        env:
-          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-        run: |
-          cat >> android/app/build.gradle <<'EOF'
-
-          android {
-              signingConfigs {
-                  release {
-                      storeFile file("../../ethio-call-upload-key.jks")
-                      storePassword System.getenv("STORE_PASSWORD")
-                      keyAlias System.getenv("KEY_ALIAS")
-                      keyPassword System.getenv("KEY_PASSWORD")
-                  }
-              }
-
-              buildTypes {
-                  release {
-                      signingConfig signingConfigs.release
-                  }
-              }
-          }
-          EOF
-
-      - name: Build signed Release APK
+      - name: Build unsigned Release APK
         working-directory: android
-        env:
-          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x ./gradlew
           ./gradlew assembleRelease
+
+      - name: Sign Release APK
+        env:
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -e
+
+          UNSIGNED_APK="android/app/build/outputs/apk/release/app-release-unsigned.apk"
+          SIGNED_APK="android/app/build/outputs/apk/release/ethio-call-release.apk"
+
+          test -f "$UNSIGNED_APK"
+
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" \
+            -name apksigner -type f | sort -V | tail -n 1)
+
+          test -n "$APKSIGNER"
+
+          "$APKSIGNER" sign \
+            --ks ethio-call-upload-key.jks \
+            --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass env:STORE_PASSWORD \
+            --key-pass env:STORE_PASSWORD \
+            --out "$SIGNED_APK" \
+            "$UNSIGNED_APK"
+
+          "$APKSIGNER" verify --verbose "$SIGNED_APK"
 
       - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
           name: ethio-call-signed-release-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
+          path: android/app/build/outputs/apk/release/ethio-call-release.apk
           retention-days: 7
 
       - name: Backup signing key
