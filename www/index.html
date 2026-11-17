@@ -1025,21 +1025,39 @@ async function saveProfile() {
 }
 
 async function boot() {
+  // Show the signed-in shell as soon as identity is confirmed; load secondary
+  // panels in the background so a slow wallet/ads endpoint cannot hold the app open.
   var me = await api('/me');
-  if (!me || !me.id) { S.loading = false; return me && me.error === 'Network error' ? (S.msg = me.error, render()) : logout(); }
+  if (!me || !me.id) {
+    S.loading = false;
+    return me && me.error === 'Network error' ? (S.msg = me.error, render()) : logout();
+  }
   S.me = me;
-  await Promise.all([loadWallet(), loadBlocks(),
-    api('/chats').then(function (c) { if (Array.isArray(c)) S.chats = c; }),
-    api('/packages').then(function (p) { if (Array.isArray(p)) S.pkgs = p; }),
-    api('/pay-info').then(function (i) { if (i && i.method) S.payInfo = i; }),
-    loadReqs(), loadBonus(), loadAds(),
-    api('/groups').then(function (g) { if (Array.isArray(g)) S.groups = g; }),
-    api('/ice').then(function (i) { if (i.iceServers) iceServers = i.iceServers; })]);
   S.loading = false;
   connect();
   render();
   if (IS_NATIVE_APP) nativePushOn(); else pushOn();
   joinPending();
+
+  // Non-critical data is fetched after first paint. Each failure is isolated.
+  Promise.allSettled([
+    loadWallet(),
+    loadBlocks(),
+    api('/chats').then(function (c) { if (Array.isArray(c)) S.chats = c; }),
+    api('/packages').then(function (p) { if (Array.isArray(p)) S.pkgs = p; }),
+    api('/pay-info').then(function (i) { if (i && i.method) S.payInfo = i; }),
+    loadReqs(),
+    loadBonus(),
+    api('/groups').then(function (g) { if (Array.isArray(g)) S.groups = g; }),
+    api('/ice').then(function (i) { if (i.iceServers) iceServers = i.iceServers; })
+  ]).then(function () {
+    if (S.me) render();
+  });
+
+  // Ads are not required for messaging/calls; defer them to avoid slowing startup.
+  setTimeout(function () {
+    if (S.me) loadAds().then(function () { if (S.me) render(); });
+  }, 2500);
 }
 
 /* ---------- messages ---------- */
