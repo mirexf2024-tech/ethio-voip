@@ -86,7 +86,8 @@ function setupChat(app, io, { pool, auth, normalizePhone, push }) {
       const me = req.user.id;
       const m = await pool.query(
         `select id, (from_id=$1) as mine, kind, body, media_name, media_size, duration,
-                (media_url is not null) as has_media, created_at, read_at, edited_at,
+                (media_url is not null) as has_media, created_at, read_at, edited_at, reply_to,
+                (select left(q.body,100) from messages q where q.id=messages.reply_to) as reply_body,
                 coalesce((select json_agg(json_build_object('e',r.emoji,'p',u.phone)) from message_reactions r join users u on u.id=r.user_id where r.msg_id=messages.id), '[]'::json) as reactions
          from messages
          where (from_id=$1 and to_id=$2) or (from_id=$2 and to_id=$1)
@@ -121,7 +122,15 @@ function setupChat(app, io, { pool, auth, normalizePhone, push }) {
         return res.status(403).json({ error: 'User is unavailable' });
       if (!rateOk(req.user.id)) return res.status(429).json({ error: 'Too many messages, wait a minute' });
 
-      let body = null, data = null, name = null, size = null, duration = null;
+      let body = null, data = null, name = null, size = null, duration = null, replyTo = null;
+      const requestedReply = parseInt(b.reply_to, 10);
+      if (requestedReply > 0) {
+        const original = await pool.query(
+          'select 1 from messages where id=$1 and ((from_id=$2 and to_id=$3) or (from_id=$3 and to_id=$2))',
+          [requestedReply, req.user.id, peer.id]
+        );
+        if (original.rowCount) replyTo = requestedReply;
+      }
       if (kind === 'text') {
         body = String(b.body || '').trim().slice(0, 2000);
         if (!body) return res.status(400).json({ error: 'Empty message' });
@@ -135,10 +144,10 @@ function setupChat(app, io, { pool, auth, normalizePhone, push }) {
       }
 
       const r = await pool.query(
-        `insert into messages(from_id, to_id, kind, body, media_url, media_name, media_size, duration)
-         values($1,$2,$3,$4,$5,$6,$7,$8)
-         returning id, kind, body, media_name, media_size, duration, created_at`,
-        [req.user.id, peer.id, kind, body, data, name, size, duration]
+        `insert into messages(from_id, to_id, kind, body, media_url, media_name, media_size, duration, reply_to)
+         values($1,$2,$3,$4,$5,$6,$7,$8,$9)
+         returning id, kind, body, media_name, media_size, duration, created_at, reply_to`,
+        [req.user.id, peer.id, kind, body, data, name, size, duration, replyTo]
       );
       const msg = { ...r.rows[0], has_media: kind !== 'text' };
       const me = await pool.query('select name from users where id=$1', [req.user.id]);
