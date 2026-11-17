@@ -1227,10 +1227,17 @@ async function flipCam() {
 }
 
 function toggleMute() {
-  if (!localStream) return;
-  var tr = localStream.getAudioTracks()[0];
-  tr.enabled = !tr.enabled;
-  S.call.muted = !tr.enabled;
+  if (!S.call || !localStream) return;
+
+  var tracks = localStream.getAudioTracks();
+  if (!tracks.length) {
+    toast(t('mic'));
+    return;
+  }
+
+  tracks[0].enabled = !tracks[0].enabled;
+  S.call.muted = !tracks[0].enabled;
+
   render();
 }
 
