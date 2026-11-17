@@ -121,14 +121,14 @@ jobs:
                   call.resolve();
               }
           }
-          """.replace("\\n          ", "\\n"))
+          """)
 
           activity = Path("android/app/src/main/java/com/mirexf2024/ethiocall/MainActivity.java")
           code = activity.read_text()
           if "AudioRoutePlugin.class" not in code:
               code = code.replace(
                   "public class MainActivity extends BridgeActivity {",
-                  "public class MainActivity extends BridgeActivity {\\n    @Override\\n    public void onCreate(android.os.Bundle savedInstanceState) {\\n        registerPlugin(AudioRoutePlugin.class);\\n        super.onCreate(savedInstanceState);\\n    }"
+                  "public class MainActivity extends BridgeActivity {" + chr(10) + "    @Override" + chr(10) + "    public void onCreate(android.os.Bundle savedInstanceState) {" + chr(10) + "        registerPlugin(AudioRoutePlugin.class);" + chr(10) + "        super.onCreate(savedInstanceState);" + chr(10) + "    }"
               )
               activity.write_text(code)
           PY
