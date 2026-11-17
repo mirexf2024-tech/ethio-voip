@@ -619,9 +619,11 @@ function callView() {
   var info = `<div class="c"${vid ? ' style="text-shadow:0 1px 4px #000"' : ''}>${vid ? '' : `<div class="av" style="margin:0 auto 12px">${c.video ? '🎥' : '📞'}</div>`}<div style="font-size:24px;font-weight:700">${esc(c.peer)}</div>
   <div>${status}</div><div id="clk" style="font-size:28px">${c.state === 'active' ? clock() : ''}</div>
   <div class="s" style="color:#94a3b8">${c.ice ? 'network: ' + esc(c.ice) : ''}</div></div>`;
+  var speakerBtn = IS_NATIVE_APP && !c.video && c.state === 'active'
+    ? `<button class="x" onclick="toggleSpeaker()">${c.speakerOn ? '🔊 Speaker' : '📞 Earpiece'}</button>` : '';
   var btns = inc
     ? `<button class="g" onclick="acceptCall()">${t('accept')}</button><button class="r" onclick="rejectCall()">${t('reject')}</button>`
-    : `<button class="x" onclick="toggleMute()">${c.muted ? t('unmute') : t('mute')}</button>` +
+    : `<button class="x" onclick="toggleMute()">${c.muted ? t('unmute') : t('mute')}</button>` + speakerBtn +
       (c.video ? `<button class="x" onclick="toggleCam()">${c.camOff ? t('camOn') : t('camOff')}</button><button class="x" onclick="flipCam()">🔄 ${t('flip')}</button>` : '') +
       `<button class="r" onclick="hangup()">${t('end')}</button>`;
   return vid
@@ -1224,6 +1226,18 @@ async function flipCam() {
     S.call.face = face;
   } catch (e) { toast(t('cam')); }
   if (S.call) S.call.flipping = false;
+}
+
+async function toggleSpeaker() {
+  if (!IS_NATIVE_APP || !S.call || S.call.video || S.call.state !== 'active') return;
+  var plugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AudioRoute;
+  if (!plugin || !plugin.setSpeaker) { toast('Speaker control is unavailable.'); return; }
+  var next = !S.call.speakerOn;
+  try {
+    await plugin.setSpeaker({enabled: next});
+    S.call.speakerOn = next;
+    render();
+  } catch (e) { toast('Could not change audio output.'); }
 }
 
 function toggleMute() {
