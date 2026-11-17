@@ -391,7 +391,7 @@ var adShown = '', adBusy = false;
 
 function syncAd() {
   var a = S.ads, f = $('adf');
-  var on = !!(S.me && a && a.banner && S.tab !== 'settings');
+  var on = !!(S.me && a && a.banner && ['chats','groups','calls','wallet'].indexOf(S.tab) !== -1 && !S.chat && !S.grp && !S.call);
   if (a && a.banner && f) {
     var key = a.height + '|' + a.banner;
     if (adShown !== key) {
