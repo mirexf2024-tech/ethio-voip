@@ -369,13 +369,21 @@ app.get('/me', auth, async (req, res) => {
 
 app.put('/profile', auth, async (req, res) => {
   const { name, avatar_url, about } = req.body;
+  const username = String(req.body.username || '').trim().toLowerCase();
   if (String(avatar_url || '').length > 60000)
     return res.status(400).json({ error: 'Photo too large' });
-  const r = await pool.query(
-    'update users set name=$2, avatar_url=$3, about=$4 where id=$1 returning *',
-    [req.user.id, String(name || '').slice(0, 60), avatar_url, String(about || '').slice(0, 140)]
-  );
-  res.json(r.rows[0]);
+  if (username && !/^[a-z][a-z0-9_]{4,31}$/.test(username))
+    return res.status(400).json({ error: 'Username must be 5-32 letters, numbers or underscores and start with a letter' });
+  try {
+    const r = await pool.query(
+      'update users set name=$2, avatar_url=$3, about=$4, username=$5 where id=$1 returning *',
+      [req.user.id, String(name || '').slice(0, 60), avatar_url, String(about || '').slice(0, 140), username || null]
+    );
+    res.json(r.rows[0]);
+  } catch (e) {
+    if (e.code === '23505') return res.status(409).json({ error: 'That username is already taken' });
+    console.error(e); res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // ---------- WALLET ----------
