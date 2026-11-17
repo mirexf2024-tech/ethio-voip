@@ -145,7 +145,8 @@ async function loadHealth() {
       (on ? '● Ready' : '○ Not configured') + '</b><span class="s">' + esc(label) + '</span></div>';
   };
   $('health').innerHTML = item('SMS gateway', !!r.sms) +
-    item('Telegram verification', !!r.tg) + item('Translation service', !!r.tr);
+    item('Telegram verification', !!r.tg) + item('Translation service', !!r.tr) +
+    item('Firebase push notifications', !!r.fcm);
 }
 
 async function loadReqs() {
