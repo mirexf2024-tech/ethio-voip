@@ -788,10 +788,13 @@ function bubble(m, g) {
       : `<img class="pic" data-mid="${mk}">`;
   } else if (m.kind === 'voice') inner = `<button class="pl" onclick="playV(${k})">▶ 🎤 ${fmtDur(m.duration)}</button>`;
   else inner = `<a href="#" onclick="dl(${k},'${safeName(m.media_name)}');return false">📎 ${esc(m.media_name || t('fileWord'))}</a>`;
+  var replyText = m.reply_body || '';
+  var replyHtml = m.reply_to ? `<div style="border-left:3px solid #f5c928;padding:4px 7px;margin-bottom:5px;background:#0755ad12;border-radius:5px;font-size:12px">↩ ${esc(replyText || ('Message #' + m.reply_to))}</div>` : '';
   var who = g && !m.mine ? `<div class="s" style="font-weight:700;color:#0f766e">${esc(m.from_name || m.from_phone || '')}</div>` : '';
   var tm = new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
   var tick = !g && m.mine ? (m.read_at ? ' ✓✓' : ' ✓') : '';
   var actions = g ? `<div class="msg-actions" style="display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap;margin-top:5px">
+    <button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="replyMsg(${m.id},true)">↩</button>
     <button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="reactGMsg(${m.id},'👍')">👍</button>
     <button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="reactGMsg(${m.id},'❤️')">❤️</button>
     ${m.mine && m.kind === 'text' ? `<button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="editGMsg(${m.id})">✏️</button>` : ''}
@@ -800,13 +803,14 @@ function bubble(m, g) {
   </div>` : '';
   var reactions = Array.isArray(m.reactions) && m.reactions.length ? `<div class="s" style="margin-top:4px">${m.reactions.map(function(x){return esc(x.e)}).join(' ')}</div>` : '';
   if (!g) actions = `<div class="msg-actions" style="display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;margin-top:5px">
+    <button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="replyMsg(${m.id},false)">↩</button>
     <button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="reactChatMsg(${m.id},'👍')">👍</button>
     <button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="reactChatMsg(${m.id},'❤️')">❤️</button>
     ${m.mine && m.kind === 'text' ? `<button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="editChatMsg(${m.id})">✏️</button>` : ''}${m.mine ? `<button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="delChatMsg(${m.id})">🗑</button>` : ''}
     <button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="pinChatMsg(${m.id})">📌</button>
     <button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="forwardChatMsg(${m.id})">↗</button>
   </div>`;
-  return `<div class="mr ${m.mine ? 'me' : ''}"><div class="b">${who}${inner}${reactions}<div class="s" style="text-align:right">${m.edited_at ? 'edited · ' : ''}${tm}${tick}</div>${actions}</div></div>`;
+  return `<div class="mr ${m.mine ? 'me' : ''}"><div class="b">${who}${replyHtml}${inner}${reactions}<div class="s" style="text-align:right">${m.edited_at ? 'edited · ' : ''}${tm}${tick}</div>${actions}</div></div>`;
 }
 
 function msgsHtml() {
@@ -820,7 +824,7 @@ function composer() {
     return `<div class="comp"><span style="flex:1;padding:10px">🔴 <span id="rt">0:00</span></span>
     <button class="x" onclick="voiceStop(true)">✖</button><button onclick="voiceStop(false)">➤</button></div>`;
   }
-  return `<div class="comp">
+  return `<div>${S.replyTo ? `<div class="comp" style="justify-content:space-between"><span class="s">↩ Replying to message #${S.replyTo.id}</span><button class="x" style="width:auto;min-height:28px;padding:3px 9px" onclick="S.replyTo=null;render()">✕</button></div>` : ''}<div class="comp">
   <label class="ic">📎<input type="file" style="display:none" onchange="pickFile(this,'file')"></label>
   <label class="ic">📷<input type="file" accept="image/*" style="display:none" onchange="pickFile(this,'image')"></label>
   <input id="mi" placeholder="${t('typeMsg')}" value="${esc(S.d_mi || '')}" oninput="typingChanged(this.value)" onkeydown="if(event.key==='Enter')sendText()">
@@ -1116,11 +1120,17 @@ async function postMsg(payload, blob) {
   if (g) loadGroups(); else loadChats();
 }
 
+function replyMsg(id, group) {
+  S.replyTo = {id:id, group:!!group};
+  render();
+  setTimeout(function(){var e=$('mi');if(e)e.focus();},0);
+}
 function sendText() {
   var e = $('mi'); if (!e) return;
   var v = e.value.trim(); if (!v) return;
   e.value = ''; S.d_mi = ''; typingChanged('');
-  postMsg({kind: 'text', body: v});
+  var replyTo = S.replyTo ? S.replyTo.id : null; S.replyTo = null;
+  postMsg({kind: 'text', body: v, reply_to: replyTo});
 }
 
 function toDataURL(b) {
