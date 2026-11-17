@@ -418,10 +418,10 @@ function loginView() {
   var m = S.meth;
   if (IS_NATIVE_APP && localStorage.getItem('ec_welcome_seen') !== '1') {
     var copy = S.lang === 'om'
-      ? {tag:'Stay Connected', lead:'Firoottan kee fi hiriyoota kee waliin wal qunnami.', register:'Galmaa’i', login:'Seeni'}
+      ? {tag:'Stay Connected', lead:'Firoottan kee fi hiriyoota kee waliin wal qunnami.', register:'Galmaa’i', login:'Seeni', privacy:'Imaammata Dhuunfaa'}
       : S.lang === 'am'
-      ? {tag:'Stay Connected', lead:'ከቤተሰብዎና ጓደኞችዎ ጋር ይገናኙ።', register:'ይመዝገቡ', login:'ግባ'}
-      : {tag:'Stay Connected', lead:'Connect with your family and friends, wherever they are.', register:'Register', login:'Login'};
+      ? {tag:'Stay Connected', lead:'ከቤተሰብዎና ጓደኞችዎ ጋር ይገናኙ።', register:'ይመዝገቡ', login:'ግባ', privacy:'የግላዊነት ፖሊሲ'}
+      : {tag:'Stay Connected', lead:'Connect with your family and friends, wherever they are.', register:'Register', login:'Login', privacy:'Privacy Policy'};
     return `<main class="ec-welcome">
       <div class="ec-welcome-lang">${langSel()}</div>
       <div class="ec-welcome-brand">
@@ -439,6 +439,7 @@ function loginView() {
         <button class="ec-start" onclick="finishWelcome()">${copy.login}</button>
         <button class="ec-login" onclick="finishWelcome()">${copy.register}</button>
         <div class="ec-foot">VOICE · VIDEO · MESSAGES</div>
+        <a href="https://mirexf2024-tech.github.io/ethio-voip/privacy-policy.html" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:12px;color:#fff;font-size:13px;text-decoration:underline;opacity:.9">${copy.privacy}</a>
       </section>
     </main>`;
   }
