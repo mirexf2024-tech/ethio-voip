@@ -31,6 +31,22 @@ jobs:
       - name: Copy Socket.IO client
         run: npm run copy:socket
 
+      - name: Validate JavaScript before Android build
+        run: |
+          set -e
+          node --check chat.js
+          node --check index.js
+          node - <<'NODE'
+          const fs = require('fs');
+          const html = fs.readFileSync('www/index.html', 'utf8');
+          const scripts = [...html.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script>/gi)];
+          const inline = scripts.filter(match => !/\\bsrc\\s*=/.test(match[1]));
+          if (!inline.length) throw new Error('No inline application script found in www/index.html');
+          const appScript = inline[inline.length - 1][2];
+          new Function(appScript);
+          console.log('JavaScript syntax checks passed.');
+          NODE
+
       - name: Generate Android project
         run: npx cap add android
 
