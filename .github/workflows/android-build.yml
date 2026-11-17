@@ -1,4 +1,4 @@
- name: Ethio Call Release APK
+name: Ethio Call Release APK
 
 on:
   workflow_dispatch:
