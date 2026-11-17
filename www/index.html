@@ -567,7 +567,7 @@ function groupView() {
   var sub = g.members.length + ' ' + t('members') + (g.username ? ' · @' + g.username : '');
   return `<div class="chatv"><div class="top"><span onclick="closeGroup()" style="font-size:22px;padding-right:12px">←</span>
   <span onclick="grpInfo()" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.name)}<br><span class="s" style="color:#d1fae5;font-weight:400">${esc(sub)} · ${t('tapInfo')}</span></span>
-  <span onclick="grpInfo()" style="font-size:20px">ℹ️</span></div>
+  <span onclick="searchGMsg()" style="font-size:20px;padding:0 8px">🔎</span><span onclick="grpInfo()" style="font-size:20px">ℹ️</span></div>
   ${g.info ? grpInfoHtml() : `<div id="msgs" class="msgs">${msgsHtml()}</div>${composer()}`}</div>`;
 }
 
@@ -756,8 +756,15 @@ function bubble(m, g) {
   var who = g && !m.mine ? `<div class="s" style="font-weight:700;color:#0f766e">${esc(m.from_name || m.from_phone || '')}</div>` : '';
   var tm = new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
   var tick = !g && m.mine ? (m.read_at ? ' ✓✓' : ' ✓') : '';
-  var del = g && canDelGMsg(m) ? `<a href="#" onclick="delGMsg(${m.id});return false" style="text-decoration:none">🗑</a> ` : '';
-  return `<div class="mr ${m.mine ? 'me' : ''}"><div class="b">${who}${inner}<div class="s" style="text-align:right">${del}${tm}${tick}</div></div></div>`;
+  var actions = g ? `<div class="msg-actions" style="display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap;margin-top:5px">
+    <button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="reactGMsg(${m.id},'👍')">👍</button>
+    <button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="reactGMsg(${m.id},'❤️')">❤️</button>
+    ${m.mine && m.kind === 'text' ? `<button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="editGMsg(${m.id})">✏️</button>` : ''}
+    ${rankOf(S.grp.my_role) >= 2 ? `<button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="pinGMsg(${m.id})">📌</button>` : ''}
+    ${canDelGMsg(m) ? `<button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="delGMsg(${m.id})">🗑</button>` : ''}
+  </div>` : '';
+  var reactions = g && Array.isArray(m.reactions) && m.reactions.length ? `<div class="s" style="margin-top:4px">${m.reactions.map(function(x){return esc(x.e)}).join(' ')}</div>` : '';
+  return `<div class="mr ${m.mine ? 'me' : ''}"><div class="b">${who}${inner}${reactions}<div class="s" style="text-align:right">${tm}${tick}</div>${actions}</div></div>`;
 }
 
 function msgsHtml() {
@@ -1285,6 +1292,36 @@ async function delGMsg(id) {
   var r = await api('/groups/' + S.grp.id + '/messages/' + id, 'DELETE');
   if (!r.ok) return toast(r.error || 'Error');
   S.grp.messages = S.grp.messages.filter(function (m) { return m.id !== id; }); renderMsgs();
+}
+
+async function editGMsg(id) {
+  var m = S.grp && S.grp.messages.find(function(x){return x.id===id;});
+  if (!m || !m.mine || m.kind !== 'text') return;
+  var body = prompt('Edit message', m.body || '');
+  if (body === null || !body.trim()) return;
+  var r = await api('/groups/' + S.grp.id + '/messages/' + id, 'PUT', {body: body.trim()});
+  if (!r.ok) return toast(r.error || 'Error');
+  m.body = r.body; m.edited_at = r.edited_at; renderMsgs();
+}
+async function reactGMsg(id, emoji) {
+  var r = await api('/groups/' + S.grp.id + '/messages/' + id + '/react', 'POST', {emoji: emoji});
+  if (!r.ok) return toast(r.error || 'Error');
+  var m = S.grp && S.grp.messages.find(function(x){return x.id===id;});
+  if (m) m.reactions = r.reactions || [];
+  renderMsgs();
+}
+async function pinGMsg(id) {
+  var r = await api('/groups/' + S.grp.id + '/pin', 'POST', {mid: id});
+  if (!r.ok) return toast(r.error || 'Error');
+  toast('📌 Message pinned');
+}
+async function searchGMsg() {
+  if (!S.grp) return;
+  var q = prompt('Search messages in this group');
+  if (!q || q.trim().length < 2) return;
+  var r = await api('/groups/' + S.grp.id + '/search?q=' + encodeURIComponent(q.trim()));
+  if (!Array.isArray(r)) return toast(r.error || 'Search failed');
+  alert(r.length ? r.map(function(x){return (x.from_name || x.from_phone || '') + ': ' + (x.body || '')}).join('\\n') : 'No messages found');
 }
 
 async function leaveGroup() {
