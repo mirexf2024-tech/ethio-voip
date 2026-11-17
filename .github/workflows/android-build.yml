@@ -7,7 +7,7 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-release:
@@ -202,6 +202,23 @@ jobs:
             -storepass "$STORE_PASSWORD" \
             -alias "$KEY_ALIAS"
 
+      - name: Set Android version for this build
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          python3 - <<'PY'
+          import os, re
+          from pathlib import Path
+          p = Path("android/app/build.gradle")
+          s = p.read_text()
+          s, code_count = re.subn(r'(?m)(^\\s*versionCode\\s+)\\d+', lambda m: m.group(1) + os.environ["BUILD_NUMBER"], s, count=1)
+          s, name_count = re.subn(r'(?m)(^\\s*versionName\\s+)[\"\'][^\"\']+[\"\']', lambda m: m.group(1) + '"1.0.' + os.environ["BUILD_NUMBER"] + '"', s, count=1)
+          if code_count != 1 or name_count != 1:
+              raise SystemExit("Could not safely set Android versionCode/versionName")
+          p.write_text(s)
+          print("Android version set to 1.0." + os.environ["BUILD_NUMBER"])
+          PY
+
       - name: Build Release APK
         working-directory: android
         run: |
@@ -242,3 +259,21 @@ jobs:
           name: ethio-call-signed-release-apk
           path: android/app/build/outputs/apk/release/ethio-call-release.apk
           retention-days: 30
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: Ethio Call 1.0.${{ github.run_number }}
+          body: |
+            Ethio Call Android release.
+
+            - Signed Android APK
+            - Version: 1.0.${{ github.run_number }}
+            - Build: #${{ github.run_number }}
+
+            Install this APK to update Ethio Call. Keep the existing app installed.
+          files: android/app/build/outputs/apk/release/ethio-call-release.apk
+          draft: false
+          prerelease: false
+          generate_release_notes: true
