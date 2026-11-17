@@ -1786,6 +1786,33 @@ function connect() {
 }
 
 /* ---------- start ---------- */
+// Recover quietly after airplane mode, tunnel changes, or a temporary data outage.
+// Socket.IO already handles retries; these hooks simply wake it when the browser
+// reports connectivity again and refresh stale conversation summaries on return.
+var ecLastForegroundSync = Date.now();
+var ecSyncBusy = false;
+function ecRefreshAfterReconnect() {
+  if (ecSyncBusy || !S.token || !navigator.onLine) return;
+  ecSyncBusy = true;
+  Promise.allSettled([
+    loadChats(),
+    S.chat && S.chat.phone ? openChat(S.chat.phone) : Promise.resolve(),
+    S.tab === 'groups' ? loadGroups() : Promise.resolve()
+  ]).finally(function () { ecSyncBusy = false; ecLastForegroundSync = Date.now(); });
+}
+window.addEventListener('online', function () {
+  if (socket && !socket.connected) socket.connect();
+  ecRefreshAfterReconnect();
+});
+window.addEventListener('offline', function () {
+  S.online = false;
+  render();
+});
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState !== 'visible') return;
+  if (socket && !socket.connected && navigator.onLine) socket.connect();
+  if (Date.now() - ecLastForegroundSync > 30000) ecRefreshAfterReconnect();
+});
 if (!IS_NATIVE_APP && 'serviceWorker' in navigator) navigator.serviceWorker.register(API_BASE + '/sw.js').catch(function () {});
 fetch(API_BASE + '/health').then(function (r) { return r.json(); }).then(function (j) {
   S.meth = {sms: !!j.sms, tg: !!j.tg, tr: !!j.tr};
