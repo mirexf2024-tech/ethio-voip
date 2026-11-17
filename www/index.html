@@ -1161,6 +1161,10 @@ function tick() {
 }
 
 function cleanup() {
+  try {
+    var audioRoute = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AudioRoute;
+    if (IS_NATIVE_APP && audioRoute && audioRoute.reset) audioRoute.reset();
+  } catch (e) {}
   if (pc) { pc.close(); pc = null; }
   if (localStream) { localStream.getTracks().forEach(function (tr) { tr.stop(); }); localStream = null; }
   $('remote').srcObject = null; $('rv').srcObject = null; $('lv').srcObject = null;
