@@ -173,6 +173,13 @@ body.ec-dark .mr .b{background:#152b46;color:#f3f6fc}
 body.ec-dark .mr.me .b{background:#173c42}
 body.ec-dark .ph{background:#152b46;color:#dce7f7}
 
+/* Chat stays clean until a message is long-pressed. */
+.mr{position:relative;touch-action:pan-y;}
+.mr .msg-actions{display:none!important;position:absolute;z-index:30;bottom:calc(100% - 2px);right:0;max-width:min(92vw,340px);padding:7px;border:1px solid #d8e2ef;border-radius:14px;background:#fff;box-shadow:0 8px 28px #07142630;gap:5px!important;flex-wrap:wrap;}
+.mr.show-actions .msg-actions{display:flex!important;}
+.mr .msg-actions button{border-radius:9px;min-width:34px;min-height:34px;background:#f2f6fb;}
+body.ec-dark .mr .msg-actions{background:#10223b;border-color:#334b6c;box-shadow:0 8px 28px #0008;}
+body.ec-dark .mr .msg-actions button{background:#203957;color:#fff;}
 </style>
 </head>
 <body>
@@ -894,8 +901,15 @@ function bubble(m, g) {
     <button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="pinChatMsg(${m.id})">📌</button>
     <button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="forwardChatMsg(${m.id})">↗</button>
   </div>`;
-  return `<div class="mr ${m.mine ? 'me' : ''}"><div class="b">${who}${replyHtml}${inner}${reactions}<div class="s" style="text-align:right">${m.edited_at ? 'edited · ' : ''}${tm}${tick}</div>${actions}</div></div>`;
+  return `<div class="mr ${m.mine ? 'me' : ''}" onpointerdown="msgHoldStart(this,event)" onpointermove="msgHoldMove(event)" onpointerup="msgHoldEnd()" onpointercancel="msgHoldEnd()" onpointerleave="msgHoldEnd()" oncontextmenu="msgContextMenu(this,event)"><div class="b">${who}${replyHtml}${inner}${reactions}<div class="s" style="text-align:right">${m.edited_at ? 'edited · ' : ''}${tm}${tick}</div>${actions}</div></div>`;
 }
+
+var msgHoldTimer=null,msgHoldNode=null,msgHoldX=0,msgHoldY=0;
+function msgHoldStart(node,e){if(e&&e.pointerType==='mouse')return;if(e&&e.target&&e.target.closest&&e.target.closest('button,a,input,label'))return;clearTimeout(msgHoldTimer);msgHoldNode=node;msgHoldX=e?e.clientX:0;msgHoldY=e?e.clientY:0;msgHoldTimer=setTimeout(function(){document.querySelectorAll('.mr.show-actions').forEach(function(x){x.classList.remove('show-actions');});if(msgHoldNode){msgHoldNode.classList.add('show-actions');if(navigator.vibrate)navigator.vibrate(22);}msgHoldTimer=null;},520);}
+function msgHoldMove(e){if(!msgHoldTimer||!e)return;if(Math.abs(e.clientX-msgHoldX)>12||Math.abs(e.clientY-msgHoldY)>12)msgHoldEnd();}
+function msgHoldEnd(){if(msgHoldTimer)clearTimeout(msgHoldTimer);msgHoldTimer=null;msgHoldNode=null;}
+function msgContextMenu(node,e){if(e)e.preventDefault();msgHoldEnd();document.querySelectorAll('.mr.show-actions').forEach(function(x){x.classList.remove('show-actions');});node.classList.add('show-actions');}
+document.addEventListener('click',function(e){if(!e.target.closest('.mr'))document.querySelectorAll('.mr.show-actions').forEach(function(x){x.classList.remove('show-actions');});});
 
 function msgsHtml() {
   var g = !!S.grp, cur = S.grp || S.chat;
