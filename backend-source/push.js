@@ -182,7 +182,7 @@ function setupPush(app, { pool, auth }) {
     res.json({ ok: true, sent });
   });
 
-  return { init, sendPush, hasSubs };
+  return { init, sendPush, hasSubs, isFirebaseReady: () => !!firebaseMessaging };
 }
 
 module.exports = { setupPush };
