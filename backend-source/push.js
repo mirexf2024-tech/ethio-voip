@@ -99,7 +99,12 @@ function setupPush(app, { pool, auth }) {
             },
             android: {
               priority: payload.call ? 'high' : 'normal',
-              ttl: payload.call ? 45000 : 3600000
+              ttl: payload.call ? 45000 : 3600000,
+              notification: {
+                channelId: 'ethio_calls',
+                sound: 'default',
+                tag: String(payload.tag || 'ethio')
+              }
             }
           });
           sent += response.successCount;
