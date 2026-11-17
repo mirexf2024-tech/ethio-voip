@@ -768,8 +768,15 @@ function bubble(m, g) {
     ${rankOf(S.grp.my_role) >= 2 ? `<button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="pinGMsg(${m.id})">📌</button>` : ''}
     ${canDelGMsg(m) ? `<button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="delGMsg(${m.id})">🗑</button>` : ''}
   </div>` : '';
-  var reactions = g && Array.isArray(m.reactions) && m.reactions.length ? `<div class="s" style="margin-top:4px">${m.reactions.map(function(x){return esc(x.e)}).join(' ')}</div>` : '';
-  return `<div class="mr ${m.mine ? 'me' : ''}"><div class="b">${who}${inner}${reactions}<div class="s" style="text-align:right">${tm}${tick}</div>${actions}</div></div>`;
+  var reactions = Array.isArray(m.reactions) && m.reactions.length ? `<div class="s" style="margin-top:4px">${m.reactions.map(function(x){return esc(x.e)}).join(' ')}</div>` : '';
+  if (!g) actions = `<div class="msg-actions" style="display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;margin-top:5px">
+    <button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="reactChatMsg(${m.id},'👍')">👍</button>
+    <button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="reactChatMsg(${m.id},'❤️')">❤️</button>
+    ${m.mine && m.kind === 'text' ? `<button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="editChatMsg(${m.id})">✏️</button><button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="delChatMsg(${m.id})">🗑</button>` : ''}
+    <button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="pinChatMsg(${m.id})">📌</button>
+    <button class="x" style="width:auto;min-height:28px;padding:3px 8px;font-size:12px" onclick="forwardChatMsg(${m.id})">↗</button>
+  </div>`;
+  return `<div class="mr ${m.mine ? 'me' : ''}"><div class="b">${who}${inner}${reactions}<div class="s" style="text-align:right">${m.edited_at ? 'edited · ' : ''}${tm}${tick}</div>${actions}</div></div>`;
 }
 
 function msgsHtml() {
@@ -794,7 +801,7 @@ function chatView() {
   var c = S.chat;
   return `<div class="chatv"><div class="top"><span onclick="closeChat()" style="font-size:22px;padding-right:12px">←</span>
   <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name || c.phone)}<br><span class="s" style="color:#d1fae5;font-weight:400">${esc(c.about || '')}</span><br><span id="peerStatus" class="s" style="color:#d1fae5;font-weight:500">${chatPeerStatus()}</span></span>
-  <span onclick="callFromChat(true)" style="font-size:22px;padding:0 6px">🎥</span><span onclick="callFromChat()" style="font-size:22px;padding:0 12px">📞</span><span onclick="blockPeer()" style="font-size:20px">🚫</span></div>
+  <span onclick="searchChatMsg()" style="font-size:20px;padding:0 8px">🔎</span><span onclick="callFromChat(true)" style="font-size:22px;padding:0 6px">🎥</span><span onclick="callFromChat()" style="font-size:22px;padding:0 12px">📞</span><span onclick="blockPeer()" style="font-size:20px">🚫</span></div>
   <div id="msgs" class="msgs">${msgsHtml()}</div>${composer()}</div>`;
 }
 
@@ -1292,6 +1299,49 @@ async function shareGroupLink() {
   try { await navigator.clipboard.writeText(link); toast(t('linkCopied')); } catch (e) { toast(link, 8000); }
 }
 
+async function editChatMsg(id) {
+  var m = S.chat && S.chat.messages.find(function(x){return x.id===id;});
+  if (!m || !m.mine || m.kind !== 'text') return;
+  var body = prompt('Edit message', m.body || '');
+  if (body === null || !body.trim()) return;
+  var r = await api('/messages/' + id, 'PUT', {body: body.trim()});
+  if (!r.ok) return toast(r.error || 'Error');
+  m.body = r.body; m.edited_at = r.edited_at; renderMsgs();
+}
+async function delChatMsg(id) {
+  if (!confirm('Delete this message?')) return;
+  var r = await api('/messages/' + id, 'DELETE');
+  if (!r.ok) return toast(r.error || 'Error');
+  S.chat.messages = S.chat.messages.filter(function(x){return x.id!==id;}); renderMsgs();
+}
+async function reactChatMsg(id, emoji) {
+  var r = await api('/messages/' + id + '/react', 'POST', {emoji:emoji});
+  if (!r.ok) return toast(r.error || 'Error');
+  var m = S.chat && S.chat.messages.find(function(x){return x.id===id;});
+  if (m) m.reactions = r.reactions || [];
+  renderMsgs();
+}
+async function pinChatMsg(id) {
+  var r = await api('/messages/' + id + '/pin', 'POST');
+  if (!r.ok) return toast(r.error || 'Error');
+  toast(r.pinned ? '📌 Pinned for you' : 'Pin removed');
+}
+async function forwardChatMsg(id) {
+  var to = prompt('Forward to phone number');
+  if (!to) return;
+  var r = await api('/messages/forward', 'POST', {message_id:id,to:to});
+  if (!r.ok) return toast(r.error || 'Error');
+  toast('Message forwarded');
+}
+async function searchChatMsg() {
+  if (!S.chat) return;
+  var q = prompt('Search messages in this chat');
+  if (!q || q.trim().length < 2) return;
+  var r = await api('/messages/' + encodeURIComponent(S.chat.phone) + '/search?q=' + encodeURIComponent(q.trim()));
+  if (!Array.isArray(r)) return toast(r.error || 'Search failed');
+  alert(r.length ? r.map(function(x){return (x.mine ? 'You: ' : '') + x.body}).join('\\n') : 'No messages found');
+}
+
 async function delGMsg(id) {
   if (!confirm(t('delMsgq'))) return;
   var r = await api('/groups/' + S.grp.id + '/messages/' + id, 'DELETE');
@@ -1544,6 +1594,15 @@ function connect() {
     }
     if (document.hidden) notify(m.from_name || m.from_phone, m.kind === 'text' ? m.body : preview(m));
     loadChats();
+  });
+  socket.on('msg:edit', function (d) {
+    if (S.chat) { var m=S.chat.messages.find(function(x){return x.id===d.id;}); if(m){m.body=d.body;m.edited_at=d.edited_at;renderMsgs();} }
+  });
+  socket.on('msg:del', function (d) {
+    if (S.chat) { S.chat.messages=S.chat.messages.filter(function(x){return x.id!==d.id;}); renderMsgs(); }
+  });
+  socket.on('msg:react', function (d) {
+    if (S.chat) { var m=S.chat.messages.find(function(x){return x.id===d.id;}); if(m){m.reactions=d.reactions||[];renderMsgs();} }
   });
   socket.on('msg:read', function (d) {
     if (S.chat && S.chat.phone === d.phone) {
