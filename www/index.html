@@ -1232,7 +1232,7 @@ async function flipCam() {
   if (S.call) S.call.flipping = false;
 }
 
-async async function toggleSpeaker() {
+async function toggleSpeaker() {
   if (!IS_NATIVE_APP || !S.call || S.call.video || S.call.state !== 'active') return;
   var plugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AudioRoute;
   if (!plugin || !plugin.setSpeaker) { toast('Speaker control is unavailable.'); return; }
