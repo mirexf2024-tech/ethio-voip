@@ -1005,16 +1005,17 @@ async function sendRequest() {
 }
 
 function pickPhoto(inp) {
-  var f = inp.files[0]; if (!f) return;
-  var img = new Image();
+  var f = inp.files[0]; inp.value = ''; if (!f) return;
+  var img = new Image(), u = URL.createObjectURL(f);
   img.onload = function () {
-    var c = document.createElement('canvas'); c.width = c.height = 128;
-    var s = Math.min(img.width, img.height);
-    c.getContext('2d').drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 128, 128);
-    S.photo = c.toDataURL('image/jpeg', 0.7);
-    render();
+    var c = document.createElement('canvas'); c.width = c.height = 96;
+    var side = Math.min(img.width, img.height);
+    c.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, 96, 96);
+    S.photo = c.toDataURL('image/jpeg', 0.58);
+    c.width = c.height = 1; URL.revokeObjectURL(u); render();
   };
-  img.src = URL.createObjectURL(f);
+  img.onerror = function () { URL.revokeObjectURL(u); toast('Image could not be opened'); };
+  img.src = u;
 }
 
 async function saveProfile() {
@@ -1160,16 +1161,24 @@ function toDataURL(b) {
 
 function compressImage(f) {
   return new Promise(function (res, rej) {
-    var img = new Image();
+    var img = new Image(), objectUrl = URL.createObjectURL(f);
     img.onload = function () {
-      var s = Math.min(1, 1280 / Math.max(img.width, img.height));
+      // Data-first defaults: resize large phone photos and encode as compact JPEG.
+      var scale = Math.min(1, 960 / Math.max(img.width, img.height));
       var c = document.createElement('canvas');
-      c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
-      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-      c.toBlob(function (b) { b ? res(b) : rej(new Error('img')); }, 'image/jpeg', 0.7);
-      URL.revokeObjectURL(img.src);
+      c.width = Math.max(1, Math.round(img.width * scale));
+      c.height = Math.max(1, Math.round(img.height * scale));
+      var ctx = c.getContext('2d', {alpha:false});
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+      c.toBlob(function (b) {
+        if (b) res(b); else rej(new Error('img'));
+        c.width = 1; c.height = 1;
+        URL.revokeObjectURL(objectUrl);
+      }, 'image/jpeg', 0.62);
     };
-    img.onerror = rej; img.src = URL.createObjectURL(f);
+    img.onerror = function (e) { URL.revokeObjectURL(objectUrl); rej(e); };
+    img.src = objectUrl;
   });
 }
 
@@ -1191,7 +1200,7 @@ async function voiceStart() {
   var mt = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm'].find(function (m) {
     return window.MediaRecorder && MediaRecorder.isTypeSupported(m);
   });
-  var opts = {audioBitsPerSecond: 24000}; if (mt) opts.mimeType = mt;
+  var opts = {audioBitsPerSecond: 16000}; if (mt) opts.mimeType = mt;
   VR.mr = new MediaRecorder(VR.stream, opts);
   VR.chunks = []; VR.cancel = false;
   VR.mr.ondataavailable = function (e) { if (e.data && e.data.size) VR.chunks.push(e.data); };
