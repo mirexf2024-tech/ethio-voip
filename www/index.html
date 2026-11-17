@@ -103,6 +103,18 @@ input:focus,select:focus{outline:2px solid #0755ad33;border-color:var(--ec-blue)
 body.ec-large{font-size:19px}body.ec-large input,body.ec-large select,body.ec-large button{font-size:19px}
 body.ec-big button,body.ec-big .nav div{min-height:58px;padding-top:16px;padding-bottom:16px}
 body.ec-contrast{background:#000!important;color:#fff!important}body.ec-contrast .card,body.ec-contrast .nav,body.ec-contrast input,body.ec-contrast select{background:#111!important;color:#fff!important;border:2px solid #ffdf00!important}body.ec-contrast .s{color:#eee!important}
+body.ec-dark{background:#071426!important;color:#e8eef8!important}
+body.ec-dark .card,body.ec-dark .nav{background:#10223b!important;color:#e8eef8!important;border-color:#263c59!important}
+body.ec-dark input,body.ec-dark select{background:#0b1a2d!important;color:#f5f7fb!important;border-color:#334b6c!important}
+body.ec-dark .row{border-color:#263c59!important}
+body.ec-dark .nav .on{color:#ffd83d!important}
+body.ec-dark .s{color:#aebbd0!important}
+body.ec-dark .chatv{background:#0a1728!important}
+body.ec-dark .msgs{background:#0a1728!important}
+body.ec-dark .mr .b{background:#152b46!important;color:#f3f6fc!important}
+body.ec-dark .mr.me .b{background:#173c42!important}
+body.ec-dark .comp{background:#10223b!important}
+
 </style>
 </head>
 <body>
@@ -137,7 +149,9 @@ var $ = function (id) { return document.getElementById(id); };
 var t = function (k) { return (T[S.lang] && T[S.lang][k]) || T.en[k] || k; };
 var A11Y={om:{title:'Dandeettii fayyadamuu',large:'Barreeffama guddisi',big:'Qabduu guddisi',contrast:'Halluu adda baasi',note:'Filannoowwan kun bilisaan bilbila kana irratti qofa kuufamu.'},am:{title:'የተደራሽነት ቅንብሮች',large:'ጽሑፍን አሳድግ',big:'ቁልፎችን አሳድግ',contrast:'ከፍተኛ ንፅፅር',note:'ነፃ ቅንብሮች በዚህ ስልክ ላይ ይቀመጣሉ።'},en:{title:'Accessibility',large:'Larger text',big:'Larger buttons',contrast:'High contrast',note:'Free settings saved on this device.'}};
 function a11yRow(k){var a=A11Y[S.lang]||A11Y.en;var v=!!S.set[k];var label=k==='textLarge'?a.large:k==='bigButtons'?a.big:a.contrast;return '<div class="row"><span>'+label+'</span><button class="'+(v?'':'x')+'" aria-pressed="'+v+'" onclick="tog(\''+k+'\')">'+(v?t('on'):t('off'))+'</button></div>';}
-function applyA11y(){document.body.classList.toggle('ec-large',!!S.set.textLarge);document.body.classList.toggle('ec-big',!!S.set.bigButtons);document.body.classList.toggle('ec-contrast',!!S.set.highContrast);}
+function applyA11y(){document.body.classList.toggle('ec-large',!!S.set.textLarge);document.body.classList.toggle('ec-big',!!S.set.bigButtons);document.body.classList.toggle('ec-contrast',!!S.set.highContrast);document.body.classList.toggle('ec-dark',localStorage.getItem('ec_dark')==='1');}
+function toggleDark(){var on=localStorage.getItem('ec_dark')!=='1';localStorage.setItem('ec_dark',on?'1':'0');applyA11y();render();}
+function clearMediaCache(){Object.keys(M).forEach(function(k){try{URL.revokeObjectURL(M[k]);}catch(e){}});M={};toast('Temporary media cache cleared');}
 
 var esc = function (s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -719,6 +733,9 @@ function settingsTab() {
   <div class="s c">${esc(m.phone)}</div>
   <button onclick="saveProfile()">${t('save')}</button></div>
   <div class="card"><b>${t('language')}</b>${langSel()}</div>
+  <div class="card"><b>Appearance & Storage</b>
+  <div class="row"><span>🌙 Dark mode</span><button class="${localStorage.getItem('ec_dark')==='1'?'':'x'}" onclick="toggleDark()">${localStorage.getItem('ec_dark')==='1'?'On':'Off'}</button></div>
+  <button class="x" onclick="clearMediaCache()">Clear temporary media cache</button></div>
   <div class="card"><b>${(A11Y[S.lang]||A11Y.en).title}</b>${a11yRow("textLarge")}${a11yRow("bigButtons")}${a11yRow("highContrast")}<div class="s">${(A11Y[S.lang]||A11Y.en).note}</div></div>
   <div class="card"><b>${t('calls')}</b>${tg('sound', t('sound'))}${tg('vibrate', t('vibrate'))}${tg('saver', t('saver'))}</div>
   <div class="card"><b>${t('notifs')}</b><div class="row"><span class="s">${esc(np)}</span>${np === 'granted' || np === 'unsupported' ? '' : `<button onclick="askNotif()">${t('enable')}</button>`}</div>
