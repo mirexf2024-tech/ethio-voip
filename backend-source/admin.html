@@ -6,42 +6,44 @@
 <meta name="robots" content="noindex">
 <title>Ethio Call Admin</title>
 <style>
-*{box-sizing:border-box}
-body{font-family:system-ui,sans-serif;margin:0 auto;padding:14px 14px 60px;max-width:560px;background:#f3f4f6;color:#111}
-h1{font-size:20px;margin:6px 0 12px}
-.card{background:#fff;border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:0 1px 3px #0001}
-.card>b{display:block;margin-bottom:6px}
-input,select,textarea,button{font-size:16px;padding:11px;border-radius:10px;border:1px solid #d1d5db;width:100%;margin:5px 0;font-family:inherit}
-button{background:#0f766e;color:#fff;border:0;font-weight:600}
-button.g{background:#16a34a}button.r{background:#dc2626}button.x{background:#e5e7eb;color:#111}
-.row{display:flex;gap:8px;align-items:center}.row>*{margin:5px 0}
-.row button{width:auto;padding:9px 14px;flex:none}
-.s{font-size:13px;color:#6b7280}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.stat{background:#f9fafb;border-radius:10px;padding:10px;text-align:center}
-.stat b{display:block;font-size:22px}
-.item{border-top:1px solid #eee;padding-top:10px;margin-top:10px}
-.tag{display:inline-block;background:#fee2e2;color:#b91c1c;border-radius:6px;padding:1px 8px;font-size:12px;margin-left:6px}
-#msg{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 16px;border-radius:10px;display:none;max-width:90%;z-index:9}
+:root{--navy:#10243a;--navy2:#183a56;--teal:#087f8c;--teal2:#0ca6a6;--gold:#e5b84b;--ink:#172b3b;--muted:#718096;--line:#e5edf2;--bg:#f3f7fa;--shadow:0 12px 32px rgba(16,36,58,.07)}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:110px}
+body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;margin:0;padding:24px 22px 72px;max-width:1500px;margin-inline:auto;background:var(--bg);color:var(--ink)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:24px 26px;border-radius:22px;background:linear-gradient(120deg,var(--navy),var(--navy2) 65%,#176778);color:#fff;box-shadow:var(--shadow);margin-bottom:18px;position:relative;overflow:hidden}
+.top:after{content:"";position:absolute;width:260px;height:260px;border:1px solid #ffffff22;border-radius:50%;right:7%;top:-170px;box-shadow:0 0 0 28px #ffffff09,0 0 0 58px #ffffff06}
+.brand{display:flex;align-items:center;gap:14px;position:relative;z-index:1}.logo{width:48px;height:48px;border-radius:15px;background:linear-gradient(145deg,var(--gold),#fff0b8);display:grid;place-items:center;color:var(--navy);font-size:24px;font-weight:900}.brand h1{font-size:clamp(20px,3vw,28px);margin:0;letter-spacing:-.6px}.brand p{margin:4px 0 0;color:#c8d9e6;font-size:13px}.secure{position:relative;z-index:1;border:1px solid #ffffff35;background:#ffffff12;border-radius:999px;padding:9px 13px;font-size:12px;color:#e7f4f8}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 20px;padding:10px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 4px 14px #10243a08;position:sticky;top:8px;z-index:5}nav a{color:#496176;text-decoration:none;font-size:13px;font-weight:700;padding:10px 13px;border-radius:10px}nav a:hover{background:#eaf5f6;color:var(--teal)}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px;margin:0 0 16px;box-shadow:var(--shadow);min-width:0;scroll-margin-top:100px}.card>b{display:flex;align-items:center;gap:9px;font-size:16px;margin:0 0 13px;color:var(--navy)}.card>b:before{content:"";width:4px;height:18px;border-radius:8px;background:linear-gradient(var(--teal2),var(--gold))}
+#accessPanel,#overview,#payments{grid-column:1/-1}#accessPanel{background:linear-gradient(135deg,#fff,#f2fbfc)}#overview .grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+input,select,textarea,button{font-size:15px;padding:12px 13px;border-radius:11px;border:1px solid #dbe5ec;width:100%;margin:6px 0;font-family:inherit;min-width:0}input,select,textarea{background:#fbfdfe;color:var(--ink);outline:none}input:focus,select:focus,textarea:focus{border-color:var(--teal2);box-shadow:0 0 0 3px #0ca6a618}
+button{background:linear-gradient(120deg,var(--teal),#0b9b9a);color:#fff;border:0;font-weight:750;cursor:pointer;transition:transform .15s,filter .15s;box-shadow:0 5px 12px #087f8c20}button:hover{filter:brightness(1.06);transform:translateY(-1px)}button.g{background:linear-gradient(120deg,#16865b,#22a36d)}button.r{background:linear-gradient(120deg,#bd4242,#df6262)}button.x{background:#edf3f6;color:#385166;box-shadow:none;border:1px solid #e0e9ef}
+.row{display:flex;gap:8px;align-items:center}.row>*{margin:5px 0}.row button{width:auto;padding:10px 15px;flex:none}.s{font-size:13px;color:var(--muted);line-height:1.55}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.stat{background:linear-gradient(145deg,#f8fbfd,#f0f6f8);border:1px solid #e7eff3;border-radius:14px;padding:14px;text-align:left;min-width:0}.stat b{display:block;font-size:clamp(19px,2.5vw,25px);letter-spacing:-.5px;color:var(--navy);overflow-wrap:anywhere;margin-bottom:4px}
+.item{border-top:1px solid var(--line);padding-top:13px;margin-top:13px;line-height:1.55}.tag{display:inline-block;background:#fff0ef;color:#b83d3d;border-radius:7px;padding:2px 9px;font-size:12px;margin-left:6px;font-weight:700}
+#msg{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 18px;border-radius:12px;display:none;max-width:min(92%,520px);z-index:20;box-shadow:0 10px 30px #10243a33}#accessPanel .s{display:block;margin-top:5px}#pk .row input{min-width:0}#adb{min-height:120px}footer{text-align:center;color:#8495a5;font-size:12px;padding:10px}
+@media(min-width:851px){body{display:block}.card:not(#accessPanel):not(#overview):not(#payments){width:calc(50% - 8px);display:inline-block;vertical-align:top;margin-right:12px}#people,#walletTools,#notifications,#ads,#packages{width:calc(50% - 8px)}}
+@media(max-width:850px){body{padding:14px 12px 56px}.card{padding:16px}.top{padding:20px;border-radius:18px}}
+@media(max-width:520px){.top{align-items:flex-start}.secure{font-size:10px;padding:7px 9px}.brand{gap:10px}.logo{width:42px;height:42px}nav{gap:3px;padding:7px}nav a{font-size:12px;padding:9px 10px}#overview .grid,.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.row{flex-wrap:wrap}.row>*{flex:1 1 100%}.row button{width:100%}#pk .row input{flex:1 1 28%}}
 </style>
 </head>
 <body>
-<h1>Ethio Call · Admin</h1>
+<header class="top"><div class="brand"><div class="logo">E</div><div><h1>Ethio Call Control Center</h1><p>Manage your platform, people and services</p></div></div><div class="secure">● PRIVATE ADMIN AREA</div></header>
+<nav aria-label="Admin sections"><a href="#overview">Overview</a><a href="#payments">Payments</a><a href="#people">People</a><a href="#walletTools">Coins</a><a href="#notifications">Notices</a><a href="#ads">Ads</a><a href="#packages">Packages</a></nav>
 
-<div class="card">
-  <input id="key" type="password" placeholder="Admin key" autocomplete="off">
+<div class="card" id="accessPanel">
+<input id="key" type="password" placeholder="Admin key" autocomplete="off">
   <button onclick="saveKey()">Open</button>
   <div class="s">The key is the ADMIN_KEY you set on Render. It stays only in this tab.</div>
 </div>
 
-<div class="card">
-  <b>Numbers</b>
+<div class="card" id="overview">
+<b>Numbers</b>
   <button class="x" onclick="loadStats()">Refresh</button>
   <div id="stats" class="grid"></div>
 </div>
 
-<div class="card">
-  <b>Payment requests</b>
+<div class="card" id="payments">
+<b>Payment requests</b>
   <select id="st" onchange="loadReqs()">
     <option value="pending">Waiting</option>
     <option value="approved">Approved</option>
@@ -50,31 +52,31 @@ button.g{background:#16a34a}button.r{background:#dc2626}button.x{background:#e5e
   <div id="reqs"></div>
 </div>
 
-<div class="card">
-  <b>People</b>
+<div class="card" id="people">
+<b>People</b>
   <input id="q" placeholder="Search phone or name" onkeydown="if(event.key==='Enter')loadUsers()">
   <button class="x" onclick="loadUsers()">Search</button>
   <div id="users"></div>
 </div>
 
-<div class="card">
-  <b>Add coins by hand</b>
+<div class="card" id="walletTools">
+<b>Add coins by hand</b>
   <input id="cp" type="tel" placeholder="+2519XXXXXXXX">
   <input id="cc" type="number" placeholder="Coins">
   <input id="cn" placeholder="Note (e.g. gift)">
   <button class="g" onclick="credit()">Add coins</button>
 </div>
 
-<div class="card">
-  <b>Send a notice to everyone</b>
+<div class="card" id="notifications">
+<b>Send a notice to everyone</b>
   <input id="nt" maxlength="60" placeholder="Title">
   <textarea id="nb" rows="3" maxlength="200" placeholder="Message (max 200 letters)"></textarea>
   <button onclick="broadcast()">Send notice</button>
   <div class="s">Goes to every phone that allowed notifications. One notice every 10 minutes.</div>
 </div>
 
-<div class="card">
-  <b>Ads</b>
+<div class="card" id="ads">
+<b>Ads</b>
   <div class="s">Paste the banner code from Adsterra (Banner or Native). It shows as a small bar at the bottom of the app, and runs in its own sandboxed frame.</div>
   <textarea id="adb" rows="5" maxlength="5000" placeholder="Banner code from Adsterra"></textarea>
   <input id="adh" type="number" placeholder="Banner height in px (50 to 300)">
@@ -85,12 +87,12 @@ button.g{background:#16a34a}button.r{background:#dc2626}button.x{background:#e5e
   <div class="s">Adsterra does not allow rewarding people for seeing or tapping its ads. Keep the Adsterra banner as a normal banner and never say "tap the ad". Watch and earn is for Start.io videos in the Android app only.</div>
 </div>
 
-<div class="card">
-  <b>Packages and prices</b>
+<div class="card" id="packages">
+<b>Packages and prices</b>
   <div id="pk"></div>
 </div>
 
-<div id="msg"></div>
+<div id="msg" role="status" aria-live="polite"></div><footer>Ethio Call · Admin Control Center · Keep your admin key private</footer>
 <script>
 var KEY = sessionStorage.getItem('ak') || '';
 var $ = function (id) { return document.getElementById(id); };
