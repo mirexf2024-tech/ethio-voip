@@ -74,7 +74,7 @@ body.ad #adbar{visibility:visible}
 .ec-welcome-brand{position:relative;z-index:1;text-align:center;margin-top:clamp(25px,6vh,58px)}
 .ec-mark{height:112px;display:flex;align-items:center;justify-content:center;position:relative;color:#fff}.ec-mark span{font-size:76px;line-height:1;transform:rotate(-18deg)}.ec-mark i{font-style:normal;font-size:38px;margin-left:-9px;margin-top:35px}.ec-mark b{position:absolute;top:0;right:calc(50% - 90px);font-size:34px;letter-spacing:-8px;color:#ffdc16;transform:rotate(-35deg)}
 .ec-wordmark{font-size:clamp(32px,9vw,44px);font-weight:900;letter-spacing:1px}.ec-wordmark strong{color:#ffdc16}.ec-tagline{font-size:17px;font-weight:600;letter-spacing:1px;color:#e7efff;margin-top:4px}
-.ec-hero-art{position:relative;flex:1;min-height:175px;display:flex;align-items:center;justify-content:center;overflow:hidden}.ec-orbit{position:absolute;border:1px solid #ffffff22;border-radius:50%;width:min(72vw,300px);height:min(72vw,300px)}.ec-orbit-a{transform:scaleY(.42) rotate(-22deg)}.ec-orbit-b{transform:scaleY(.7) rotate(28deg)}.ec-globe{font-size:clamp(76px,20vw,112px);filter:drop-shadow(0 12px 20px #00153b88);opacity:.92}.ec-hero-phone{position:absolute;font-size:54px;right:18%;bottom:20%;filter:drop-shadow(0 8px 12px #00153b88)}.ec-signal{position:absolute;left:13%;bottom:24%;font-size:12px;letter-spacing:4px;color:#ffdc16}
+.ec-hero-art{position:relative;flex:1;min-height:190px;display:flex;align-items:center;justify-content:center;overflow:visible;padding:8px 0}.ec-hero-image{display:block;width:min(100%,410px);height:auto;max-height:clamp(190px,36vh,340px);object-fit:contain;filter:drop-shadow(0 15px 22px #00153b66);position:relative;z-index:1}.ec-orbit{position:absolute;border:1px solid #ffffff22;border-radius:50%;width:min(72vw,300px);height:min(72vw,300px)}.ec-orbit-a{transform:scaleY(.42) rotate(-22deg)}.ec-orbit-b{transform:scaleY(.7) rotate(28deg)}
 .ec-welcome-bottom{position:relative;z-index:1;text-align:center;margin:auto 0 0}.ec-welcome-bottom h1{font-size:clamp(18px,5vw,22px);line-height:1.45;font-weight:600;margin:0 auto 18px;max-width:340px;color:#f7faff}.ec-start,.ec-login{max-width:350px;margin:7px auto;border-radius:30px;min-height:54px;font-size:18px}.ec-start{background:#ffdc16;color:#06285f;box-shadow:0 7px 18px #00163e66}.ec-login{background:transparent;color:#fff;border:1.5px solid #ffffffbb}.ec-foot{font-size:10px;letter-spacing:2px;color:#b9cfff;margin-top:17px}
 @media(max-height:650px){.ec-welcome-brand{margin-top:12px}.ec-mark{height:75px}.ec-mark span{font-size:58px}.ec-hero-art{min-height:110px}.ec-globe{font-size:72px}.ec-welcome-bottom h1{margin-bottom:8px}.ec-start,.ec-login{min-height:46px;margin:4px auto}}
 
@@ -420,8 +420,8 @@ function loginView() {
     var copy = S.lang === 'om'
       ? {tag:'Stay Connected', lead:'Firoottan kee fi hiriyoota kee waliin wal qunnami.', start:'Seensa', login:'Login', privacy:'Imaammata Dhuunfaa'}
       : S.lang === 'am'
-      ? {tag:'Stay Connected', lead:'ከቤተሰብዎና ጓደኞችዎ ጋር ይገናኙ።', start:'ጀምር', login:'Login', privacy:'የግላዊነት ፖሊሲ'}
-      : {tag:'Stay Connected', lead:'Connect with your family and friends, wherever they are.', start:'Get Started', login:'Login', privacy:'Privacy Policy'};
+      ? {tag:'Stay Connected', lead:'ከቤተሰብዎና ጓደኞችዎ ጋር ይገናኙ።', start:'መግቢያ', login:'Login', privacy:'የግላዊነት ፖሊሲ'}
+      : {tag:'Stay Connected', lead:'Connect with your family and friends, wherever they are.', start:'Continue', login:'Login', privacy:'Privacy Policy'};
     return `<main class="ec-welcome">
       <div class="ec-welcome-lang">${langSel()}</div>
       <div class="ec-welcome-brand">
@@ -429,10 +429,9 @@ function loginView() {
         <div class="ec-wordmark">ETHIO <strong>CALL</strong></div>
         <div class="ec-tagline">${copy.tag}</div>
       </div>
-      <div class="ec-hero-art" aria-hidden="true">
+      <div class="ec-hero-art">
         <div class="ec-orbit ec-orbit-a"></div><div class="ec-orbit ec-orbit-b"></div>
-        <div class="ec-globe">🌍</div><div class="ec-hero-phone">📱</div>
-        <div class="ec-signal">●　●　●</div>
+        <img class="ec-hero-image" src="./ethio-call-welcome.svg" alt="Ethio Call: namoota ergaa fi bilbilaan wal qunnamsiisu">
       </div>
       <section class="ec-welcome-bottom">
         <h1>${copy.lead}</h1>
