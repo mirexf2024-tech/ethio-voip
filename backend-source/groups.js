@@ -814,6 +814,33 @@ function setupGroups(app, io, { pool, auth, normalizePhone, push }) {
     res.json({ ok: true, msg });
   }));
 
+  // Forward a message inside this group.
+  app.post('/groups/:id/messages/:mid/forward', auth, h(async (req, res) => {
+    const g = await guard(req, res);
+    if (!g) return;
+    const mid = parseId(req.params.mid);
+    if (!mid) return fail(res, 400, 'Bad message id');
+    const source = await pool.query(
+      `select m.kind,m.body,m.media_url,m.media_name,m.media_size,m.duration,
+              coalesce(u.name,u.phone,'Ethio Call member') as original_sender
+       from group_messages m left join users u on u.id=m.from_id
+       where m.id=$1 and m.group_id=$2`, [mid,g.gid]);
+    if (!source.rowCount) return fail(res, 404, 'Message not found');
+    const x=source.rows[0];
+    const stop=await mayPost(g,req.user.id,x.kind);
+    if (stop) return res.status(stop.status).json({error:stop.error,wait:stop.wait});
+    const ins=await pool.query(
+      `insert into group_messages(group_id,from_id,kind,body,media_url,media_name,media_size,duration,fwd_from)
+       values($1,$2,$3,$4,$5,$6,$7,$8,$9) returning id`,
+      [g.gid,req.user.id,x.kind,x.body,x.media_url,x.media_name,x.media_size,x.duration,x.original_sender]);
+    const newId=ins.rows[0].id;
+    await pool.query('update group_members set last_read_id=$3 where group_id=$1 and user_id=$2 and last_read_id < $3',[g.gid,req.user.id,newId]);
+    const msg=await loadMsg(g.gid,req.user.id,newId);
+    const other=await loadMsg(g.gid,0,newId);
+    announce(g,req,other,previewOf(x.kind,x.body,x.media_name),[]);
+    res.json({ok:true,msg});
+  }));
+
   // edit my text message (for EDIT_HOURS hours)
   app.put('/groups/:id/messages/:mid', auth, h(async (req, res) => {
     const g = await guard(req, res);
