@@ -483,6 +483,17 @@ function chatsTab() {
   }).join('') || `<div class="s c">${q ? t('noMatch') : t('nobody')}</div>`}</div>`;
 }
 
+/* ---------- contacts: people already connected through chats ---------- */
+function contactsTab() {
+  var q = String(S.d_contact_q || '').toLowerCase();
+  var rows = S.chats.filter(function(c) {
+    return !q || [c.name,c.phone].some(function(v){return String(v||'').toLowerCase().indexOf(q)!==-1;});
+  });
+  return `<div class="card"><b>Contacts</b><input id="contactSearch" type="search" placeholder="Search contacts by name or phone" value="${esc(S.d_contact_q || '')}" oninput="S.d_contact_q=this.value;render()">
+  <div class="s">People you have already chatted with on Ethio Call.</div>
+  ${rows.map(function(c){return `<div class="row" onclick="openChat('${esc(c.phone)}')"><span style="display:flex;gap:10px;align-items:center;min-width:0">${avatar(c.avatar_url,(c.name||'#')[0].toUpperCase(),'sm')}<span><b>${esc(c.name||c.phone)}</b><br><span class="s">${esc(c.phone)}</span></span></span><button style="width:auto">Message</button></div>`;}).join('') || '<div class="s c">No contacts yet. Start a chat using a phone number.</div>'}</div>`;
+}
+
 /* ---------- groups tab + group screen ---------- */
 function gPreview(g) {
   if (!g.last_at) return g.members + ' ' + t('members');
@@ -733,10 +744,10 @@ function settingsTab() {
 }
 
 function mainView() {
-  var b = S.tab === 'chats' ? chatsTab() : S.tab === 'groups' ? groupsTab() : S.tab === 'calls' ? callsTab() : S.tab === 'wallet' ? walletTab() : settingsTab();
+  var b = S.tab === 'chats' ? chatsTab() : S.tab === 'contacts' ? contactsTab() : S.tab === 'groups' ? groupsTab() : S.tab === 'calls' ? callsTab() : S.tab === 'wallet' ? walletTab() : settingsTab();
   var unread = S.chats.reduce(function (a, c) { return a + (c.unread || 0); }, 0);
   var gunread = S.groups.reduce(function (a, g) { return a + (g.unread || 0); }, 0);
-  var items = [['chats', '💬'], ['groups', '👥'], ['calls', '📞'], ['wallet', '🪙'], ['settings', '⚙️']];
+  var items = [['chats', '💬'], ['contacts', '👤'], ['groups', '👥'], ['calls', '📞'], ['wallet', '🪙'], ['settings', '⚙️']];
   return (S.online ? '' : `<div class="ban">${t('offline')}</div>`) +
     `<div class="top"><span>Ethio Call</span><span class="pill">🪙 ${S.coins}</span></div><div class="pg">${b}</div>` +
     `<div class="nav">${items.map(function (i) {
