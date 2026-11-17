@@ -354,14 +354,22 @@ function preview(c) {
 
 function chatsTab() {
   var ask = pushReady() && Notification.permission === 'default';
-  return `${ask ? `<div class="card"><div>🔔 ${t('notifBanner')}</div><button onclick="askNotif()">${t('enable')}</button></div>` : ''}<div class="card"><input id="nc" type="tel" placeholder="${t('newChat')}" value="${esc(S.d_nc || '')}">
+  var q = String(S.d_cq || '').trim().toLowerCase();
+  var list = S.chats.filter(function (c) {
+    return !q || [c.name, c.phone, c.last_message, c.last_body].some(function (v) {
+      return String(v || '').toLowerCase().indexOf(q) !== -1;
+    });
+  });
+  return `${ask ? `<div class="card"><div>🔔 ${t('notifBanner')}</div><button onclick="askNotif()">${t('enable')}</button></div>` : ''}
+  <div class="card"><input id="nc" type="tel" placeholder="${t('newChat')}" value="${esc(S.d_nc || '')}">
   <button onclick="newChat()">${t('start')}</button></div>
-  <div class="card">${S.chats.map(function (c) {
+  <div class="card"><input id="chatSearch" type="search" placeholder="🔎 Search chats / Maqaa ykn lakkoofsa barbaadi" value="${esc(S.d_cq || '')}" oninput="S.d_cq=this.value;var p=this.selectionStart;render();var n=document.getElementById('chatSearch');if(n){n.focus();n.setSelectionRange(p,p)}">
+  ${list.map(function (c) {
     return `<div class="row" onclick="openChat('${esc(c.phone)}')"><span style="display:flex;gap:10px;align-items:center;min-width:0">
     ${avatar(c.avatar_url, (c.name || '#')[0].toUpperCase(), 'sm')}
     <span style="min-width:0"><b>${esc(c.name || c.phone)}</b><br><span class="s">${preview(c)}</span></span></span>
     ${c.unread ? `<span class="badge">${c.unread}</span>` : ''}</div>`;
-  }).join('') || `<div class="s c">${t('nobody')}</div>`}</div>`;
+  }).join('') || `<div class="s c">${q ? 'No matching chats' : t('nobody')}</div>`}</div>`;
 }
 
 /* ---------- groups tab + group screen ---------- */
