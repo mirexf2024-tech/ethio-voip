@@ -71,3 +71,20 @@ The following client-side improvements have now been committed to the native And
 - Privacy Policy and Terms pages are bundled under `www/docs/` so the native app can open them without relying on a remote page.
 
 These changes do not configure TURN, prove call quality on real devices, or replace multi-network testing. TURN configuration, incoming-call native notification testing, security review, and real-device call regression remain release blockers.
+
+
+## Additional native-client work — 18 November 2026
+
+- Improved Settings language coverage for Afaan Oromoo, Amharic, and English: appearance/storage labels and account-safety guidance now follow the selected language.
+- Added keyboard-operable semantics and accessible labels to the bottom navigation, live-region announcements for app status messages, visible keyboard focus, and reduced-motion support.
+- Kept the Android client scope isolated to `www/index.html`; the Render backend and live web client were not changed.
+- Android release workflow is now manual-dispatch only. A GitHub push will no longer automatically create another APK. Do not create a new release until the two-phone regression checks are completed.
+
+## Remaining work that cannot honestly be marked complete yet
+
+- International phone registration: current server validation accepts Ethiopian +251 numbers only. This needs a deliberate backend/API and OTP-provider change; the backend is intentionally unchanged in this client-only pass.
+- TURN: server supports TURN through environment variables, but production TURN credentials must be configured privately in the hosting environment and calls tested on separate networks.
+- Abuse reporting: blocking is present, but a report-review endpoint and moderation workflow are not confirmed in the current backend. Do not show a nonfunctional report button.
+- Rewarded ads: an ad network account, native SDK/placement configuration, consent flow, and test-device validation are prerequisites. Do not promise rewards or ship a fake rewarded-ad action.
+- Ethiopian Sign Language and speech-to-text: require reviewed local-language/sign-language content and tested speech services. Oromo recognition support must be verified before advertising it.
+- Release gate remains two-phone testing of login/OTP, chat, media, incoming-call notifications, speaker/earpiece/Bluetooth, calls on Wi-Fi and mobile data, and update/signature continuity.
