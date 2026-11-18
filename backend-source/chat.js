@@ -208,6 +208,46 @@ function setupChat(app, io, { pool, auth, normalizePhone, push }) {
     }
   });
 
+  // ---- report abuse: reports are private and reviewed by platform admins ----
+  const REPORT_REASONS = ['spam', 'harassment', 'impersonation', 'inappropriate', 'scam', 'other'];
+  app.post('/reports', auth, async (req, res) => {
+    try {
+      const b = req.body || {};
+      const peer = await findUser(b.phone);
+      if (!peer) return res.status(404).json({ error: 'User not found' });
+      if (peer.id === req.user.id) return res.status(400).json({ error: 'You cannot report your own account' });
+      const reason = String(b.reason || '').toLowerCase();
+      if (!REPORT_REASONS.includes(reason)) return res.status(400).json({ error: 'Choose a valid report reason' });
+      const details = String(b.details || '').trim().slice(0, 500);
+      let messageId = b.message_id ? parseInt(b.message_id, 10) : null;
+      if (messageId) {
+        const m = await pool.query(
+          'select 1 from messages where id=$1 and ((from_id=$2 and to_id=$3) or (from_id=$3 and to_id=$2))',
+          [messageId, req.user.id, peer.id]
+        );
+        if (!m.rowCount) return res.status(400).json({ error: 'Message does not belong to this conversation' });
+      } else messageId = null;
+      const recent = await pool.query(
+        "select count(*)::int as n from abuse_reports where reporter_id=$1 and created_at > now() - interval '24 hours'",
+        [req.user.id]
+      );
+      if (recent.rows[0].n >= 5) return res.status(429).json({ error: 'Daily report limit reached' });
+      const duplicate = await pool.query(
+        "select 1 from abuse_reports where reporter_id=$1 and target_id=$2 and status='pending' and created_at > now() - interval '24 hours'",
+        [req.user.id, peer.id]
+      );
+      if (duplicate.rowCount) return res.status(409).json({ error: 'You already reported this account recently' });
+      const r = await pool.query(
+        'insert into abuse_reports(reporter_id,target_id,message_id,reason,details) values($1,$2,$3,$4,$5) returning id,created_at',
+        [req.user.id, peer.id, messageId, reason, details || null]
+      );
+      res.json({ ok: true, report_id: r.rows[0].id, created_at: r.rows[0].created_at });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+
   // ---- block list ----
   app.get('/blocks', auth, async (req, res) => {
     const r = await pool.query(
