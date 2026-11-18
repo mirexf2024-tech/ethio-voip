@@ -92,6 +92,30 @@ input,select{font-size:16px;min-height:46px;padding:10px 12px;border-radius:12px
 .ec-menu{top:62px;border-color:#e2eaf4;background:#fff;box-shadow:0 14px 36px #09274724}
 .ec-menu button{min-height:46px;font-size:15px;color:#172033}
 @media(min-width:481px){body{box-shadow:0 0 30px #0b254010}.top,.pg,.nav{max-width:480px;margin-left:auto;margin-right:auto}}
+
+/* Ethio Call visual refresh: calm blue, warm gold, clear touch targets */
+:root{--ec-blue:#073b78;--ec-blue2:#0b5db5;--ec-gold:#f4c542;--ec-ink:#14243a;--ec-muted:#718096;--ec-line:#e5ebf3;--ec-surface:#fff;--ec-bg:#f3f7fc}
+html{background:var(--ec-bg)}
+body{background:linear-gradient(180deg,#eaf2fc 0,#f5f8fc 230px,#f5f7fb 100%);color:var(--ec-ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.005em}
+#app{min-height:100vh}
+.top{background:linear-gradient(115deg,#062b59 0%,#0752a0 72%,#0b66b7 100%);color:#fff;padding:15px 17px;min-height:62px;box-shadow:0 5px 18px #082b552b;position:sticky;top:0;z-index:30}
+.top:after{content:"";position:absolute;left:16px;bottom:0;width:42px;height:3px;border-radius:4px;background:var(--ec-gold)}
+.pg{padding:17px 15px calc(104px + var(--adh,0px))}
+.card{background:rgba(255,255,255,.97);border:1px solid #e8eef6;border-radius:19px;padding:16px;margin-bottom:13px;box-shadow:0 7px 22px #183b6410}
+input,select,textarea{border:1px solid #dce5f0;border-radius:13px;background:#fbfdff;color:var(--ec-ink);padding:13px 14px;min-height:46px;outline:none;transition:border-color .18s,box-shadow .18s}
+input:focus,select:focus,textarea:focus{border-color:#4388cf;box-shadow:0 0 0 3px #0b5db51a}
+button{border-radius:13px;background:linear-gradient(135deg,#0753a1,#0a69bf);color:#fff;font-weight:700;min-height:46px;padding:12px 15px;box-shadow:0 4px 10px #0753a11c;transition:transform .12s,filter .12s}
+button:active{transform:scale(.985);filter:brightness(.96)}
+button.g{background:linear-gradient(135deg,#16845b,#20a875)}button.r{background:linear-gradient(135deg,#c83e4b,#e0525d)}button.x{background:#edf3fa;color:#24415f;box-shadow:none;border:1px solid #dfe8f2}
+.nav{background:rgba(255,255,255,.97);border-top:1px solid #e4ebf4;box-shadow:0 -7px 24px #15385a12;backdrop-filter:blur(14px);padding-top:6px;z-index:40}
+.nav div{padding:9px 2px 8px;color:#8190a3;font-weight:600}
+.nav .on{color:#0754a2}
+.pill{background:#ffffff25;border:1px solid #ffffff35;border-radius:30px;padding:5px 11px}
+.ec-menu{border-radius:17px!important;overflow:hidden}
+.ec-menu button{box-shadow:none;border-radius:10px;margin:3px 0}
+.av{border:2px solid #dceafa;background:#eaf3ff;color:#0754a2}
+@media(min-width:481px){body{border-left:1px solid #e8eef6;border-right:1px solid #e8eef6;box-shadow:0 0 42px #12345a12}}
+@media(prefers-reduced-motion:no-preference){.card{animation:ecRise .24s ease both}@keyframes ecRise{from{opacity:.75;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}}
 </style>
 </head>
 <body>
