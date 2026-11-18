@@ -88,3 +88,20 @@ These changes do not configure TURN, prove call quality on real devices, or repl
 - Rewarded ads: an ad network account, native SDK/placement configuration, consent flow, and test-device validation are prerequisites. Do not promise rewards or ship a fake rewarded-ad action.
 - Ethiopian Sign Language and speech-to-text: require reviewed local-language/sign-language content and tested speech services. Oromo recognition support must be verified before advertising it.
 - Release gate remains two-phone testing of login/OTP, chat, media, incoming-call notifications, speaker/earpiece/Bluetooth, calls on Wi-Fi and mobile data, and update/signature continuity.
+
+## Backend services update — 18 November 2026
+
+- Added database storage and authenticated submission for abuse reports, with allowed reason categories, duplicate-report protection, a five-report daily limit, and optional message-context validation.
+- Added a private admin moderation queue with pending/reviewed/actioned/dismissed states and moderator notes. Account suspension remains a separate deliberate admin action.
+- Added E.164 international phone-number parsing and validation while retaining Ethiopian local-number convenience. Actual OTP delivery to each destination country still depends on the configured SMS gateway, carrier permissions, and delivery testing; international delivery is not yet certified.
+- Added optional browser speech-to-text using the device Web Speech API. Availability and Afaan Oromoo recognition vary by browser/device; the app reports unsupported or failed recognition rather than claiming universal support.
+- Rewarded-ad coin issuance now defaults to disabled until a real, approved native ad provider/placement is configured and validated. Normal banner ads remain separate and are never rewarded.
+- Added safe service-readiness indicators to the admin dashboard for international number format, reporting, TURN configuration, and rewarded ads.
+
+### External configuration and release blockers
+
+- TURN is code-ready but still requires valid private TURN credentials in Render environment variables (TURN_USERNAME, TURN_CREDENTIAL, and optionally TURN_HOST) or a verified ICE_SERVERS JSON value. No credentials were added to source control.
+- International OTP delivery requires the SMS gateway to support the destination country and the SIM/provider to permit sending there. Test delivery, rates, and regulatory requirements before opening international registration.
+- Rewarded ads remain off by default. A platform owner/adult account, approved ad-network account, native SDK/placement, consent configuration, and real test-device callbacks are required before enabling rewards.
+- Afaan Oromoo speech recognition is not guaranteed by Web Speech API. A dedicated provider or verified device-language support is needed before presenting it as a supported production feature.
+- The two-phone regression gate remains mandatory. These commits do not authorize an APK build or certify production call quality.
