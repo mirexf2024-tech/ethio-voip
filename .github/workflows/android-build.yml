@@ -1,10 +1,9 @@
 name: Ethio Call Signed Release APK
 
 on:
+  # Release APKs are manual only. Do not build a new APK until the two-phone
+  # calling, messaging, notification, and update regression checks are complete.
   workflow_dispatch:
-  push:
-    branches:
-      - main
 
 permissions:
   contents: write
