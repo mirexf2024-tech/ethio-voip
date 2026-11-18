@@ -1739,9 +1739,15 @@ async function pollCallQuality() {
       if (dl + dr > 0) loss = dl / (dl + dr);
     }
     lastCallStats = {lost:lost,received:received};
-    var quality = !rtt && loss === null ? '' :
-      ((rtt !== null && rtt > .6) || (loss !== null && loss > .08)) ? 'Poor network' :
-      ((rtt !== null && rtt > .25) || (loss !== null && loss > .03)) ? 'Fair network' : 'Good network';
+    var qkey = !rtt && loss === null ? '' :
+      ((rtt !== null && rtt > .6) || (loss !== null && loss > .08)) ? 'poor' :
+      ((rtt !== null && rtt > .25) || (loss !== null && loss > .03)) ? 'fair' : 'good';
+    var labels = {
+      om:{poor:'Neetworkiin laafaa',fair:'Neetworkiin giddugaleessa',good:'Neetworkiin gaarii'},
+      am:{poor:'ደካማ ኔትወርክ',fair:'መካከለኛ ኔትወርክ',good:'ጥሩ ኔትወርክ'},
+      en:{poor:'Poor network',fair:'Fair network',good:'Good network'}
+    };
+    var quality = qkey ? ((labels[S.lang] || labels.en)[qkey]) : '';
     if (S.call && quality && S.call.netQuality !== quality) { S.call.netQuality = quality; render(); }
   } catch (e) {}
 }
