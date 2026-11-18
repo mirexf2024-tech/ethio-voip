@@ -23,7 +23,7 @@ app.disable('x-powered-by');
 app.use(cors({
   origin: (origin, cb) => {
     // Native clients may omit Origin; browser clients are restricted to known app hosts.
-    if (!origin || /^(?:https:\/\/(?:ethio-voip\.onrender\.com|mirexf2024-tech\.github\.io)|capacitor:\/\/localhost|ionic:\/\/localhost|http:\/\/localhost(?::\d+)?)$/.test(origin)) return cb(null, true);
+    if (!origin || /^(?:https:\/\/(?:ethio-voip\.onrender\.com|mirexf2024-tech\.github\.io)|capacitor:\/\/localhost|ionic:\/\/localhost|https:\/\/localhost(?::\\d+)?|http:\/\/localhost(?::\d+)?)$/.test(origin)) return cb(null, true);
     return cb(new Error('Origin not allowed'));
   },
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
