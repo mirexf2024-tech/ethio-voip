@@ -62,3 +62,12 @@ This document records the improvements needed before positioning Ethio Call as a
 ## Release gate
 
 Do not call the app globally ready until the team has tested the release on multiple Android versions and device brands, multiple networks, low-bandwidth conditions, and with users who speak each supported language. Resolve all critical security and calling failures first.
+## Implementation progress — 18 November 2026
+
+The following client-side improvements have now been committed to the native Android source (`www/index.html`):
+- Live call quality estimate based on WebRTC round-trip time and inbound audio packet loss, with Afaan Oromoo, Amharic and English labels.
+- Visible reconnecting / connected / failed network states during calls.
+- Call-quality polling is stopped when a call ends to avoid background work.
+- Privacy Policy and Terms pages are bundled under `www/docs/` so the native app can open them without relying on a remote page.
+
+These changes do not configure TURN, prove call quality on real devices, or replace multi-network testing. TURN configuration, incoming-call native notification testing, security review, and real-device call regression remain release blockers.
