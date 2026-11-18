@@ -18,9 +18,64 @@ const { setupGroups } = require('./groups');
 const { setupAds } = require('./ads');
 
 const app = express();
-app.set('trust proxy', 1); // Render sits in front of us: needed to see the real visitor address
-app.use(cors());
-app.use(express.json({ limit: '3mb' }));
+app.set('trust proxy', 1); // Render proxy: trust only the nearest platform proxy.
+app.disable('x-powered-by');
+app.use(cors({
+  origin: (origin, cb) => {
+    // Native clients may omit Origin; browser clients are restricted to known app hosts.
+    if (!origin || /^https:\/\/(?:ethio-voip\.onrender\.com|mirexf2024-tech\.github\.io)$/.test(origin)) return cb(null, true);
+    return cb(new Error('Origin not allowed'));
+  },
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization'],
+  maxAge: 600
+}));
+app.use(express.json({ limit: '256kb' }));
+app.use((req,res,next) => {
+  res.set({
+    'X-Content-Type-Options':'nosniff',
+    'Referrer-Policy':'strict-origin-when-cross-origin',
+    'X-Frame-Options':'DENY',
+    'Permissions-Policy':'camera=(self), microphone=(self), geolocation=()',
+    'Cross-Origin-Resource-Policy':'same-origin'
+  });
+  if (req.secure || req.get('x-forwarded-proto') === 'https') {
+    res.set('Strict-Transport-Security','max-age=31536000; includeSubDomains');
+  }
+  next();
+});
+
+// Lightweight per-instance abuse controls. Render currently runs one instance;
+// use a shared Redis/Valkey store before scaling horizontally.
+const abuseBuckets = new Map();
+const ABUSE_BUCKET_MAX = 20000;
+function abuseLimit({ windowMs=60000, max=120, keyFn, message='Too many requests. Please wait and try again.' }={}) {
+  return (req,res,next) => {
+    const now=Date.now();
+    const key=keyFn ? keyFn(req) : (req.ip || req.socket.remoteAddress || 'unknown');
+    let bucket=abuseBuckets.get(key);
+    if (!bucket || now >= bucket.resetAt) bucket={count:0,resetAt:now+windowMs};
+    bucket.count++;
+    abuseBuckets.set(key,bucket);
+    if (abuseBuckets.size > ABUSE_BUCKET_MAX) {
+      for (const [k,v] of abuseBuckets) if (now >= v.resetAt) abuseBuckets.delete(k);
+      if (abuseBuckets.size > ABUSE_BUCKET_MAX) abuseBuckets.clear();
+    }
+    res.set('RateLimit-Limit',String(max));
+    res.set('RateLimit-Remaining',String(Math.max(0,max-bucket.count)));
+    res.set('RateLimit-Reset',String(Math.ceil(bucket.resetAt/1000)));
+    if (bucket.count > max) {
+      res.set('Retry-After',String(Math.max(1,Math.ceil((bucket.resetAt-now)/1000))));
+      return res.status(429).json({error:message});
+    }
+    next();
+  };
+}
+const apiLimiter=abuseLimit({windowMs:60000,max:180});
+const otpIpLimiter=abuseLimit({windowMs:15*60000,max:8,message:'Too many verification requests from this network. Please wait.'});
+const otpPhoneLimiter=abuseLimit({windowMs:60*60000,max:5,keyFn:req=> 'otp-phone:'+String(req.body?.phone||'').replace(/\D/g,'').slice(-15),message:'Too many verification attempts for this number. Please wait.'});
+app.use('/auth', otpIpLimiter, otpPhoneLimiter);
+app.use(apiLimiter);
 
 const PHONE = /^\+[1-9]\d{7,14}$/; // E.164: country code + subscriber number
 const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
@@ -436,7 +491,25 @@ app.post('/wallet/dev-buy', auth, async (req, res) => {
 });
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
+const io = new Server(server, {
+  cors: { origin: ['https://ethio-voip.onrender.com','https://mirexf2024-tech.github.io'], methods: ['GET','POST'] },
+  maxHttpBufferSize: 1e6,
+  connectTimeout: 20000,
+  pingTimeout: 20000,
+  pingInterval: 25000
+});
+const socketIpConnections = new Map();
+io.use((socket,next) => {
+  const ip=socket.handshake.address || 'unknown';
+  const current=socketIpConnections.get(ip) || 0;
+  if (current >= 8) return next(new Error('Too many active connections'));
+  socketIpConnections.set(ip,current+1);
+  socket.once('disconnect',()=> {
+    const n=Math.max(0,(socketIpConnections.get(ip)||1)-1);
+    if(n) socketIpConnections.set(ip,n); else socketIpConnections.delete(ip);
+  });
+  next();
+});
 const push = setupPush(app, { pool, auth });
 setupCalls(io, { pool, jwt, changeCoins, normalizePhone, push, isBanned: (id) => payments.isBanned(id) });
 setupChat(app, io, { pool, auth, normalizePhone, push });
