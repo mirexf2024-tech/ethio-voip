@@ -242,7 +242,7 @@ function toast(m, ms) {
   S.msg = m; render();
   setTimeout(function () { if (S.msg === m) { S.msg = ''; render(); } }, ms || 3500);
 }
-function go(tab) { S.tab = tab; if (tab === 'groups') loadGroups(); render(); }
+function go(tab) { S.menuOpen = false; S.tab = tab; if (tab === 'groups') loadGroups(); render(); }
 function setLang(l) { S.lang = l; localStorage.setItem('lg', l); render(); }
 function tog(k) { S.set[k] = !S.set[k]; try { localStorage.setItem('st', JSON.stringify(S.set)); } catch (e) {} render(); }
 
@@ -869,11 +869,6 @@ function settingsTab() {
   <div class="card s c">${t('aboutApp')}: Ethio Call v1.2 · ${t('rate')}</div>`;
 }
 
-function contactsTab() {
-  var q=String(S.d_contactSearch||'').toLowerCase();
-  var rows=(S.phoneContacts||[]).filter(function(c){return !q||[c.name,c.phone].some(function(v){return String(v||'').toLowerCase().indexOf(q)!==-1;});});
-  return '<section class="tg-chat-head"><h2>'+t('contacts')+'</h2><label class="tg-search">⌕ <input placeholder="Search contacts" value="'+esc(S.d_contactSearch||'')+'" oninput="S.d_contactSearch=this.value;render()"></label></section><div class="tg-chat-list">'+rows.map(function(c){return '<div class="tg-chat-row" onclick="openChat(\''+esc(c.phone)+'\')">'+avatar(null,(c.name||'#')[0].toUpperCase(),'sm')+'<div class="tg-chat-copy"><b>'+esc(c.name||c.phone)+'</b><span class="tg-preview">'+esc(c.phone)+'</span></div></div>';}).join('')+'<div class="tg-empty">'+(rows.length?'':'No contacts loaded. Open Settings to load phone contacts.')+'</div></div>';
-}
 function profileTab(){ return settingsTab(); }
 function mainView() {
   var b = S.tab === 'chats' ? chatsTab() : S.tab === 'contacts' ? contactsTab() : S.tab === 'groups' ? groupsTab() : S.tab === 'profile' ? profileTab() : S.tab === 'wallet' ? walletTab() : S.tab === 'calls' ? callsTab() : settingsTab();
