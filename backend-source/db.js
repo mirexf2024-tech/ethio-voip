@@ -1,8 +1,19 @@
 const { Pool } = require('pg');
 
+function databaseConnectionString() {
+  if (!process.env.DATABASE_URL) return undefined;
+  const url = new URL(process.env.DATABASE_URL);
+  // Make certificate and hostname verification explicit; avoids pg v9 SSL-mode ambiguity.
+  if (process.env.PGSSL_REJECT_UNAUTHORIZED !== 'false') url.searchParams.set('sslmode', 'verify-full');
+  return url.toString();
+}
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: databaseConnectionString(),
   ssl: { rejectUnauthorized: process.env.PGSSL_REJECT_UNAUTHORIZED !== 'false' },
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
+  max: 10,
 });
 
 async function init() {
