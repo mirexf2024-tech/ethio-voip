@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const http = require('http');
 const path = require('path');
 const { Server } = require('socket.io');
+const { PostHog } = require('posthog-node');
 const { pool, init } = require('./db');
 const { setupCalls } = require('./calls');
 const { setupChat } = require('./chat');
@@ -17,6 +18,28 @@ const { setupTranslate } = require('./translate');
 const { setupGroups } = require('./groups');
 const { setupAds } = require('./ads');
 
+const posthog = process.env.POSTHOG_API_KEY
+  ? new PostHog(process.env.POSTHOG_API_KEY, {
+      host: process.env.POSTHOG_HOST,
+      flushAt: 20,
+      flushInterval: 10000,
+    })
+  : null;
+if (!posthog && process.env.NODE_ENV !== 'production') {
+  console.warn('POSTHOG_API_KEY variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once POSTHOG_API_KEY is configured');
+}
+function trackAnalytics(event, userId, properties = {}) {
+  if (!posthog || !userId) return;
+  try {
+    posthog.capture({
+      distinctId: String(userId),
+      event,
+      properties: { ...properties, app: 'ethio-call' },
+    });
+  } catch (err) {
+    console.warn('Analytics capture skipped:', err.message);
+  }
+}
 const app = express();
 app.set('trust proxy', 1); // Render proxy: trust only the nearest platform proxy.
 app.disable('x-powered-by');
@@ -429,6 +452,7 @@ app.post('/auth/verify-otp', async (req, res) => {
       } catch (e) { console.error('referral failed:', e.message); }
     }
     delete user.inserted;
+    trackAnalytics('account_authenticated', user.id, { method: 'otp' });
     const token = jwt.sign({ id: user.id, phone }, process.env.JWT_SECRET, {
       expiresIn: '30d',
     });
@@ -541,3 +565,13 @@ init()
     console.error('Database init failed:', e.message);
     process.exit(1);
   });
+
+async function closeAnalytics() {
+  if (posthog) {
+    try { await posthog.shutdown(); } catch (e) {
+      console.warn('PostHog shutdown warning:', e.message);
+    }
+  }
+}
+process.once('SIGTERM', closeAnalytics);
+process.once('SIGINT', closeAnalytics);
