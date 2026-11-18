@@ -983,19 +983,29 @@ async function saveProfile() {
 }
 
 async function boot() {
+  var bootTimer = null;
   try {
-    var me = await api('/me');
+    // Profile authentication is critical; optional data must not block first render.
+    var me = await Promise.race([
+      api('/me'),
+      new Promise(function (resolve) {
+        bootTimer = setTimeout(function () { resolve({error: 'Request timeout'}); }, 12000);
+      })
+    ]);
     if (!me || !me.id) {
       S.loading = false;
-      if (me && (me.error === 'Network error' || me.error === 'Request timeout')) {
-        S.msg = 'Connection is slow. Please try again.';
-        render();
-      } else {
-        await logout();
-      }
+      S.msg = me && me.error === 'Request timeout'
+        ? 'Connection is taking too long. Please try again.'
+        : (me && me.error === 'Network error'
+          ? 'Connection is slow. Please check your internet and try again.'
+          : 'Could not load your account. Please sign in again.');
+      render();
       return;
     }
     S.me = me;
+    S.loading = false;
+    render();
+
     var jobs = [
       function () { return loadWallet(); },
       function () { return loadBlocks(); },
@@ -1008,20 +1018,26 @@ async function boot() {
       function () { return api('/groups').then(function (g) { if (Array.isArray(g)) S.groups = g; }); },
       function () { return api('/ice').then(function (i) { if (i && i.iceServers) iceServers = i.iceServers; }); }
     ];
-    await Promise.all(jobs.map(function (job) {
-      return Promise.resolve().then(job).catch(function () { return null; });
-    }));
+    await Promise.race([
+      Promise.all(jobs.map(function (job) {
+        return Promise.resolve().then(job).catch(function (e) {
+          console.warn('Optional app data unavailable:', e);
+          return null;
+        });
+      })),
+      new Promise(function (resolve) { setTimeout(resolve, 10000); })
+    ]);
   } catch (e) {
+    console.error('App startup failed:', e);
     S.msg = 'Some information could not be loaded. Please check your connection.';
   } finally {
+    if (bootTimer) clearTimeout(bootTimer);
     S.loading = false;
-    // Always remove the loading screen before optional realtime/push setup.
     try { render(); } catch (renderError) { console.error('Initial render failed:', renderError); }
     if (S.me) {
       try { connect(); } catch (connectError) { console.error('Realtime connection failed:', connectError); }
       try { Promise.resolve(pushOn()).catch(function (e) { console.warn('Push setup skipped:', e); }); } catch (pushError) {}
       try { Promise.resolve(joinPending()).catch(function (e) { console.warn('Pending join skipped:', e); }); } catch (joinError) {}
-      try { render(); } catch (renderError) { console.error('Final render failed:', renderError); }
     }
   }
 }
