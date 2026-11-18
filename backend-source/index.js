@@ -17,6 +17,7 @@ const { setupGrowth } = require('./growth');
 const { setupTranslate } = require('./translate');
 const { setupGroups } = require('./groups');
 const { setupAds } = require('./ads');
+const { setupGroupLive } = require('./livekit');
 
 const posthog = process.env.POSTHOG_API_KEY
   ? new PostHog(process.env.POSTHOG_API_KEY, {
@@ -548,6 +549,7 @@ const growth = setupGrowth(app, io, { pool, auth, changeCoins, normalizePhone, p
 const payments = setupPayments(app, io, { pool, auth, changeCoins, normalizePhone, push });
 const groups = setupGroups(app, io, { pool, auth, normalizePhone, push });
 const ads = setupAds(app, { pool, auth, changeCoins, adminOk: (req, res) => payments.adminOk(req, res) });
+const groupLive = setupGroupLive(app, { pool, auth });
 
 init()
   .then(() => push.init())
@@ -555,6 +557,7 @@ init()
   .then(() => growth.init())
   .then(() => telegram.init())
   .then(() => groups.init())
+  .then(() => groupLive.init())
   .then(() => ads.init())
   .then(() => {
     server.listen(process.env.PORT || 3000, '0.0.0.0', () =>
