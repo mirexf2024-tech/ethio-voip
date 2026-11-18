@@ -1006,7 +1006,7 @@ function chatView() {
   var c = S.chat;
   return `<div class="chatv"><div class="top"><span onclick="closeChat()" style="font-size:22px;padding-right:12px">←</span>
   <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name || c.phone)}<br><span class="s" style="color:#d1fae5;font-weight:400">${esc(c.about || '')}</span><br><span id="peerStatus" class="s" style="color:#d1fae5;font-weight:500">${chatPeerStatus()}</span></span>
-  <span onclick="searchChatMsg()" style="font-size:20px;padding:0 8px">🔎</span><span onclick="callFromChat(true)" style="font-size:22px;padding:0 6px">🎥</span><span onclick="callFromChat()" style="font-size:22px;padding:0 12px">📞</span><span onclick="blockPeer()" style="font-size:20px">🚫</span></div>
+  <span onclick="searchChatMsg()" style="font-size:20px;padding:0 8px">🔎</span><span onclick="callFromChat(true)" style="font-size:22px;padding:0 6px">🎥</span><span onclick="callFromChat()" style="font-size:22px;padding:0 10px">📞</span><span onclick="reportPeer()" title="Report account" style="font-size:20px;padding:0 7px">⚑</span><span onclick="blockPeer()" title="Block account" style="font-size:20px">🚫</span></div>
   <div id="msgs" class="msgs">${msgsHtml()}</div>${composer()}</div>`;
 }
 
@@ -1312,6 +1312,25 @@ async function blockPeer() {
   S.chat = null; await loadBlocks(); render(); toast(t('blocked'));
 }
 async function unblock(p) { await api('/block', 'POST', {phone: p, block: false}); await loadBlocks(); render(); }
+
+async function reportPeer() {
+  if (!S.chat) return;
+  var labels = {
+    om:'Sababa gabaasaa filadhu: spam, harassment, impersonation, inappropriate, scam, other',
+    am:'የሪፖርት ምክንያት ይምረጡ: spam, harassment, impersonation, inappropriate, scam, other',
+    en:'Report reason: spam, harassment, impersonation, inappropriate, scam, other'
+  };
+  var reason = prompt(labels[S.lang] || labels.en);
+  if (reason === null) return;
+  reason = String(reason).trim().toLowerCase();
+  if (['spam','harassment','impersonation','inappropriate','scam','other'].indexOf(reason) < 0)
+    return toast(({om:'Sababa sirrii galchi.',am:'ትክክለኛ ምክንያት ያስገቡ።',en:'Enter one of the listed reasons.'})[S.lang] || 'Invalid reason');
+  var details = prompt(({om:'Ibsa dabalataa (dirqama miti)',am:'ተጨማሪ ማብራሪያ (አማራጭ)',en:'Additional details (optional)'})[S.lang]) || '';
+  if (!confirm(({om:'Gabaasa kana erguu?',am:'ይህን ሪፖርት ይላኩ?',en:'Submit this report?'})[S.lang] || 'Submit this report?')) return;
+  var r = await api('/reports', 'POST', {phone:S.chat.phone, reason:reason, details:details});
+  if (r.ok) toast(({om:'Gabaasni kee ergameera. Galatoomi.',am:'ሪፖርትዎ ተልኳል። እናመሰግናለን።',en:'Report submitted. Thank you.'})[S.lang] || 'Report submitted');
+  else toast(r.error || 'Error');
+}
 
 async function postMsg(payload, blob) {
   var g = !!S.grp, tgt = S.grp || S.chat;
