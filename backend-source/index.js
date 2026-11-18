@@ -491,6 +491,11 @@ app.post('/wallet/dev-buy', auth, async (req, res) => {
 });
 
 const server = http.createServer(app);
+// Bound slow or idle HTTP connections to reduce resource-exhaustion abuse.
+server.headersTimeout = 15000;
+server.requestTimeout = 30000;
+server.keepAliveTimeout = 5000;
+server.maxRequestsPerSocket = 1000;
 const io = new Server(server, {
   cors: { origin: ['https://ethio-voip.onrender.com','https://mirexf2024-tech.github.io','capacitor://localhost','ionic://localhost','http://localhost'], methods: ['GET','POST'] },
   maxHttpBufferSize: 1e6,
