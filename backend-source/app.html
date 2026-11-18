@@ -330,6 +330,7 @@ function loginView() {
   return `<div class="ec-welcome"><div class="ec-welcome-mark">E<span>✦</span></div><div class="ec-welcome-copy"><div class="ec-kicker">ETHIO CALL</div><h1>${welcome[0]}</h1><p>${welcome[1]}</p><div class="ec-feature-line">${welcome[2]}</div></div><div class="ec-orbit ec-orbit-a"></div><div class="ec-orbit ec-orbit-b"></div></div><div class="pg"><div class="card ec-login-card">${langSel()}
   <div class="ec-login-title">${({om:'Lakkoofsa bilbilaa kee galchi',am:'ስልክ ቁጥርዎን ያስገቡ',en:'Enter your phone number'})[S.lang] || 'Enter your phone number'}</div>
   <input id="ph" type="tel" autocomplete="tel" placeholder="${t('phone')}" value="${esc(S.d_ph || '+251')}">
+  <div class="s">${({om:'Lakkoofsa biyya keessaa +251 ykn biyya alaa +koodii biyyaatiin galchi.',am:'የአገር ውስጥ +251 ወይም የውጭ አገር ቁጥርን ከአገር ኮድ ጋር ያስገቡ።',en:'Enter an Ethiopian +251 number or an international number with its +country code.'})[S.lang]}</div>
   ${m.tg ? `<button class="g" onclick="tgCode()">✈️ ${t('viaTg')}</button>` : ''}
   <button class="${m.tg ? 'x' : ''}" onclick="sendCode()">${m.tg ? t('viaSms') : t('getCode')}</button>
   ${S.tgLink ? `<a class="btn" href="${esc(S.tgLink)}" target="_blank" rel="noopener">✈️ ${t('openTg')}</a><div class="s">${t('tgHelp')}</div>` : ''}
@@ -651,14 +652,14 @@ function composer() {
   <label class="ic">📎<input type="file" style="display:none" onchange="pickFile(this,'file')"></label>
   <label class="ic">📷<input type="file" accept="image/*" style="display:none" onchange="pickFile(this,'image')"></label>
   <input id="mi" placeholder="${t('typeMsg')}" value="${esc(S.d_mi || '')}" onkeydown="if(event.key==='Enter')sendText()">
-  <button onclick="sendText()">➤</button><button class="x" onclick="voiceStart()">🎤</button></div>`;
+  <button onclick="sendText()">➤</button><button class="x" onclick="speechToText()" title="Speech to text">🗣️</button><button class="x" onclick="voiceStart()">🎤</button></div>`;
 }
 
 function chatView() {
   var c = S.chat;
   return `<div class="chatv"><div class="top"><span onclick="closeChat()" style="font-size:22px;padding-right:12px">←</span>
   <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name || c.phone)}<br><span class="s" style="color:#d1fae5;font-weight:400">${esc(c.about || '')}</span></span>
-  <span onclick="callFromChat(true)" style="font-size:22px;padding:0 6px">🎥</span><span onclick="callFromChat()" style="font-size:22px;padding:0 12px">📞</span><span onclick="blockPeer()" style="font-size:20px">🚫</span></div>
+  <span onclick="callFromChat(true)" style="font-size:22px;padding:0 6px">🎥</span><span onclick="callFromChat()" style="font-size:22px;padding:0 10px">📞</span><span onclick="reportPeer()" title="Report account" style="font-size:20px;padding:0 7px">⚑</span><span onclick="blockPeer()" title="Block account" style="font-size:20px">🚫</span></div>
   <div id="msgs" class="msgs">${msgsHtml()}</div>${composer()}</div>`;
 }
 
@@ -925,6 +926,21 @@ async function blockPeer() {
 }
 async function unblock(p) { await api('/block', 'POST', {phone: p, block: false}); await loadBlocks(); render(); }
 
+async function reportPeer() {
+  if (!S.chat) return;
+  var reasonText = prompt(({om:'Sababa gabaasaa filadhu: spam, harassment, impersonation, inappropriate, scam, other',am:'የሪፖርት ምክንያት ይምረጡ: spam, harassment, impersonation, inappropriate, scam, other',en:'Report reason: spam, harassment, impersonation, inappropriate, scam, other'})[S.lang]);
+  if (reasonText === null) return;
+  var reason = String(reasonText).trim().toLowerCase();
+  if (['spam','harassment','impersonation','inappropriate','scam','other'].indexOf(reason) < 0)
+    return toast(({om:'Sababa sirrii galchi.',am:'ትክክለኛ ምክንያት ያስገቡ።',en:'Enter one of the listed reasons.'})[S.lang]);
+  var details = prompt(({om:'Ibsa dabalataa (dirqama miti)',am:'ተጨማሪ ማብራሪያ (አማራጭ)',en:'Additional details (optional)'})[S.lang]) || '';
+  var ok = confirm(({om:'Gabaasa kana gara garee nageenyaa erguu?',am:'ይህን ሪፖርት ለደህንነት ቡድን ይላኩ?',en:'Send this report to the safety team?'})[S.lang]);
+  if (!ok) return;
+  var r = await api('/reports', 'POST', {phone:S.chat.phone, reason:reason, details:details});
+  if (r.ok) toast(({om:'Gabaasni kee ergameera. Galatoomi.',am:'ሪፖርትዎ ተልኳል። እናመሰግናለን።',en:'Report submitted. Thank you.'})[S.lang]);
+  else toast(r.error || 'Error');
+}
+
 async function postMsg(payload, blob) {
   var g = !!S.grp, tgt = S.grp || S.chat;
   if (!tgt) return;
@@ -1003,6 +1019,21 @@ async function voiceStart() {
     if (e) e.textContent = fmtDur(ms / 1000);
     if (ms > 120000) voiceStop(false);
   }, 500);
+}
+function speechToText() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return toast(({om:'Sagaleen gara barruutti jijjiiruun bilbila kana irratti hin deeggaramu.',am:'በዚህ ስልክ የንግግር ወደ ጽሑፍ ባህሪ አይደገፍም።',en:'Speech-to-text is not supported on this device.'})[S.lang]);
+  var rec = new SR();
+  rec.lang = ({om:'om-ET',am:'am-ET',en:'en-US'})[S.lang] || 'en-US';
+  rec.interimResults = false;
+  rec.maxAlternatives = 1;
+  rec.onresult = function (e) {
+    var input = $('mi');
+    if (input) { input.value = (input.value ? input.value + ' ' : '') + e.results[0][0].transcript; S.d_mi = input.value; input.focus(); }
+  };
+  rec.onerror = function () { toast(({om:'Sagalee hubachuun hin milkoofne. Afaan biraa yaali.',am:'ድምፅን መለየት አልተሳካም። ሌላ ቋንቋ ይሞክሩ።',en:'Speech recognition failed. Try another language.'})[S.lang]); };
+  try { rec.start(); toast(({om:'Amma dubbadhu…',am:'አሁን ይናገሩ…',en:'Speak now…'})[S.lang]); }
+  catch (e) { toast('Speech recognition unavailable'); }
 }
 function voiceStop(cancel) {
   VR.cancel = !!cancel;
