@@ -28,8 +28,8 @@ function setupAds(app, { pool, auth, changeCoins, adminOk }) {
     r.rows.forEach((x) => { m[x.key] = x.value; });
     cache = {
       ads_on: (m.ads_on || '1') === '1',
-      banner: m.ads_banner || '',
-      height: Math.max(50, Math.min(300, parseInt(m.ads_height || '100', 10) || 100)),
+      banner: m.ads_banner || process.env.ADSTERRA_BANNER_CODE || '',
+      height: Math.max(50, Math.min(300, parseInt(m.ads_height || process.env.ADSTERRA_BANNER_HEIGHT || '50', 10) || 50)),
       reward_on: (m.reward_on || '1') === '1',
     };
     cacheAt = Date.now();
