@@ -23,14 +23,14 @@ app.disable('x-powered-by');
 app.use(cors({
   origin: (origin, cb) => {
     // Native clients may omit Origin; browser clients are restricted to known app hosts.
-    if (!origin || /^https:\/\/(?:ethio-voip\.onrender\.com|mirexf2024-tech\.github\.io)$/.test(origin)) return cb(null, true);
+    if (!origin || /^(?:https:\/\/(?:ethio-voip\.onrender\.com|mirexf2024-tech\.github\.io)|capacitor:\/\/localhost|ionic:\/\/localhost|http:\/\/localhost(?::\d+)?)$/.test(origin)) return cb(null, true);
     return cb(new Error('Origin not allowed'));
   },
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization'],
   maxAge: 600
 }));
-app.use(express.json({ limit: '256kb' }));
+app.use(express.json({ limit: '3mb' }));
 app.use((req,res,next) => {
   res.set({
     'X-Content-Type-Options':'nosniff',
@@ -71,7 +71,7 @@ function abuseLimit({ windowMs=60000, max=120, keyFn, message='Too many requests
     next();
   };
 }
-const apiLimiter=abuseLimit({windowMs:60000,max:180});
+const apiLimiter=abuseLimit({windowMs:60000,max:600});
 const otpIpLimiter=abuseLimit({windowMs:15*60000,max:8,message:'Too many verification requests from this network. Please wait.'});
 const otpPhoneLimiter=abuseLimit({windowMs:60*60000,max:5,keyFn:req=> 'otp-phone:'+String(req.body?.phone||'').replace(/\D/g,'').slice(-15),message:'Too many verification attempts for this number. Please wait.'});
 app.use('/auth', otpIpLimiter, otpPhoneLimiter);
@@ -502,7 +502,7 @@ const socketIpConnections = new Map();
 io.use((socket,next) => {
   const ip=socket.handshake.address || 'unknown';
   const current=socketIpConnections.get(ip) || 0;
-  if (current >= 8) return next(new Error('Too many active connections'));
+  if (current >= 20) return next(new Error('Too many active connections'));
   socketIpConnections.set(ip,current+1);
   socket.once('disconnect',()=> {
     const n=Math.max(0,(socketIpConnections.get(ip)||1)-1);
