@@ -235,6 +235,7 @@ app.get('/docs/privacy-policy.html', (_, res) => res.sendFile(path.join(__dirnam
 app.get('/docs/terms.html', (_, res) => res.sendFile(path.join(__dirname, 'docs', 'terms.html')));
 app.get('/icon-192.png', iconRoute(192));
 app.get('/icon-512.png', iconRoute(512));
+app.get('/ethio-call-logo.svg', (_, res) => res.sendFile(path.join(__dirname, 'ethio-call-logo.svg')));
 app.get('/manifest.json', (_, res) =>
   res.json({
     name: 'Ethio Call',
