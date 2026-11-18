@@ -162,6 +162,8 @@ button.r{background:#c83245}
 button:focus-visible,.nav div:focus-visible{outline:3px solid #f5c928;outline-offset:2px}
 @media(min-width:420px){.pg{padding-left:18px;padding-right:18px}.card{padding:18px}}
 @media(prefers-reduced-motion:no-preference){button,.row,.nav div{transition:background .16s ease,transform .16s ease,box-shadow .16s ease}button:active{transform:scale(.985)}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+.nav div[role="button"]:focus-visible{outline:3px solid #f4c542;outline-offset:-3px;border-radius:8px}
 body.ec-dark{background:#071426;color:#e8eef8}
 body.ec-dark .card,body.ec-dark .nav{background:#10223b;color:#e8eef8;border-color:#263c59}
 body.ec-dark .top{background:linear-gradient(125deg,#03132d,#07366f 70%,#0755ad)}
@@ -265,6 +267,11 @@ var VR = {mr: null, chunks: [], t0: 0, timer: null, stream: null, cancel: false}
 var $ = function (id) { return document.getElementById(id); };
 var t = function (k) { return (T[S.lang] && T[S.lang][k]) || T.en[k] || k; };
 var A11Y={om:{title:'Dandeettii fayyadamuu',large:'Barreeffama guddisi',big:'Qabduu guddisi',contrast:'Halluu adda baasi',note:'Filannoowwan kun bilisaan bilbila kana irratti qofa kuufamu.'},am:{title:'የተደራሽነት ቅንብሮች',large:'ጽሑፍን አሳድግ',big:'ቁልፎችን አሳድግ',contrast:'ከፍተኛ ንፅፅር',note:'ነፃ ቅንብሮች በዚህ ስልክ ላይ ይቀመጣሉ።'},en:{title:'Accessibility',large:'Larger text',big:'Larger buttons',contrast:'High contrast',note:'Free settings saved on this device.'}};
+var SETTINGS_COPY={
+ om:{appearance:'Mul’ata fi kuusaa',dark:'Haala dukkanaa',darkOn:'Banaa',darkOff:'Cufaa',clearCache:'Kuusaa yeroo muraasaa qulqulleessi',safety:'Nageenya fi dhuunfaa',protect:'Akaawuntii kee eegi',protectText:'Koodii seensaa yeroo tokkoo nama kamiyyuu waliin hin qoodin. Namni si jeequ yoo jiraate isa ugguri.',messages:'Ergaa fi bilbila',messagesText:'Yeroo danda’ametti network amanamaa fayyadami. Jecha iccitii ykn odeeffannoo maallaqaa ergaa keessatti hin ergin.',privacy:'Hubachiisa dhuunfaa',privacyText:'Ethio Call yeroo ammaa icciitii xumuraa irraa gara xumuraatti (end-to-end encryption) qaba jedhee hin mirkaneessu.',help:'Gargaarsa fi deeggarsa',feedback:'Yaada ergi',policy:'Imaammata dhuunfaa',terms:'Haala itti fayyadamaa'},
+ am:{appearance:'መልክ እና ማከማቻ',dark:'ጨለማ ገጽታ',darkOn:'በርቷል',darkOff:'ጠፍቷል',clearCache:'ጊዜያዊ ማከማቻን አጽዳ',safety:'ደህንነት እና ግላዊነት',protect:'መለያዎን ይጠብቁ',protectText:'የአንድ ጊዜ መግቢያ ኮድዎን ለማንም አያጋሩ። የሚያስቸግርዎትን ሰው ያግዱ።',messages:'መልዕክቶች እና ጥሪዎች',messagesText:'በተቻለ መጠን የታመነ ኔትወርክ ይጠቀሙ። የይለፍ ቃል ወይም የገንዘብ መረጃ በቻት አይላኩ።',privacy:'የግላዊነት ማስታወሻ',privacyText:'Ethio Call በአሁኑ ጊዜ ከመጨረሻ እስከ መጨረሻ ምስጠራ አለው ብሎ አያረጋግጥም።',help:'እገዛ እና ድጋፍ',feedback:'አስተያየት ላክ',policy:'የግላዊነት ፖሊሲ',terms:'የአጠቃቀም ውሎች'},
+ en:{appearance:'Appearance & storage',dark:'Dark mode',darkOn:'On',darkOff:'Off',clearCache:'Clear temporary media cache',safety:'Safety & privacy',protect:'Protect your account',protectText:'Never share your one-time login code. Block anyone who is bothering you.',messages:'Messages and calls',messagesText:'Use a trusted network when possible. Do not send passwords or financial details in chat.',privacy:'Privacy note',privacyText:'Ethio Call does not currently guarantee end-to-end encryption.',help:'Help & support',feedback:'Send feedback',policy:'Privacy policy',terms:'Terms of service'}
+};
 function a11yRow(k){var a=A11Y[S.lang]||A11Y.en;var v=!!S.set[k];var label=k==='textLarge'?a.large:k==='bigButtons'?a.big:a.contrast;return '<div class="row"><span>'+label+'</span><button class="'+(v?'':'x')+'" aria-pressed="'+v+'" onclick="tog(\''+k+'\')">'+(v?t('on'):t('off'))+'</button></div>';}
 function applyA11y(){document.body.classList.toggle('ec-large',!!S.set.textLarge);document.body.classList.toggle('ec-big',!!S.set.bigButtons);document.body.classList.toggle('ec-contrast',!!S.set.highContrast);document.body.classList.toggle('ec-dark',localStorage.getItem('ec_dark')==='1');}
 function toggleDark(){var on=localStorage.getItem('ec_dark')!=='1';localStorage.setItem('ec_dark',on?'1':'0');applyA11y();render();}
@@ -892,9 +899,9 @@ function settingsTab() {
     return `<div class="row"><span>${label}</span><button class="${S.set[k] ? '' : 'x'}" onclick="tog('${k}')">${S.set[k] ? t('on') : t('off')}</button></div>`;
   };
   return `<div class="card"><b>${t('language')}</b>${langSel()}</div>
-  <div class="card"><b>Appearance & Storage</b>
-  <div class="row"><span>🌙 Dark mode</span><button class="${localStorage.getItem('ec_dark')==='1'?'':'x'}" onclick="toggleDark()">${localStorage.getItem('ec_dark')==='1'?'On':'Off'}</button></div>
-  <button class="x" onclick="clearMediaCache()">Clear temporary media cache</button></div>
+  <div class="card"><b>${(SETTINGS_COPY[S.lang]||SETTINGS_COPY.en).appearance}</b>
+  <div class="row"><span>🌙 ${(SETTINGS_COPY[S.lang]||SETTINGS_COPY.en).dark}</span><button class="${localStorage.getItem('ec_dark')==='1'?'':'x'}" onclick="toggleDark()">${localStorage.getItem('ec_dark')==='1'?(SETTINGS_COPY[S.lang]||SETTINGS_COPY.en).darkOn:(SETTINGS_COPY[S.lang]||SETTINGS_COPY.en).darkOff}</button></div>
+  <button class="x" onclick="clearMediaCache()">${(SETTINGS_COPY[S.lang]||SETTINGS_COPY.en).clearCache}</button></div>
   <div class="card"><b>${(A11Y[S.lang]||A11Y.en).title}</b>${a11yRow("textLarge")}${a11yRow("bigButtons")}${a11yRow("highContrast")}<div class="s">${(A11Y[S.lang]||A11Y.en).note}</div></div>
   <div class="card"><b>${t('calls')}</b>${tg('sound', t('sound'))}${tg('vibrate', t('vibrate'))}${tg('saver', t('saver'))}</div>
   <div class="card"><b>${t('notifs')}</b><div class="row"><span class="s">${esc(np)}</span>${np === 'granted' || np === 'unsupported' ? '' : `<button onclick="askNotif()">${t('enable')}</button>`}</div>
@@ -906,15 +913,10 @@ function settingsTab() {
   <button class="x" onclick="clearRec()">${t('clearRecent')}</button>
   <button class="x" onclick="logout()">${t('logout')}</button>
   <button class="r" onclick="delAcc()">${t('delAcc')}</button></div>
-  <div class="card"><b>🔐 Safety & privacy</b>
-  <div class="row"><b>Protect your account</b><div class="s">Never share your one-time login code with anyone. Use the block control if someone is bothering you.</div></div>
-  <div class="row"><b>Messages and calls</b><div class="s">Use a trusted network when possible. Do not send passwords, financial details or other sensitive information in chat.</div></div>
-  <div class="row"><b>Privacy note</b><div class="s">Ethio Call does not currently make an end-to-end encryption guarantee. Do not assume chats or calls have end-to-end encryption.</div></div>
-  </div>
-  <div class="card"><b>Help & Support</b>
-  <a class="btn" href="mailto:mirexf2024@gmail.com?subject=Ethio%20Call%20Feedback">✉️ Send feedback</a>
-  <a class="btn" href="https://mirexf2024-tech.github.io/ethio-voip/privacy-policy.html" target="_blank" rel="noopener noreferrer">🔐 Privacy Policy</a>
-  <a class="btn" href="https://mirexf2024-tech.github.io/ethio-voip/terms.html" target="_blank" rel="noopener noreferrer">📄 Terms of Service</a>
+  <div class="card"><b>🔐 ${(SETTINGS_COPY[S.lang]||SETTINGS_COPY.en).safety}</b>
+  <div class="row"><b>${(SETTINGS_COPY[S.lang]||SETTINGS_COPY.en).protect}</b><div class="s">${(SETTINGS_COPY[S.lang]||SETTINGS_COPY.en).protectText}</div></div>
+  <div class="row"><b>${(SETTINGS_COPY[S.lang]||SETTINGS_COPY.en).messages}</b><div class="s">${(SETTINGS_COPY[S.lang]||SETTINGS_COPY.en).messagesText}</div></div>
+  <div class="row"><b>${(SETTINGS_COPY[S.lang]||SETTINGS_COPY.en).privacy}</b><div class="s">${(SETTINGS_COPY[S.lang]||SETTINGS_COPY.en).privacyText}</div></div>
   </div>
   <div class="card"><b>${({om:'Gargaarsa fi odeeffannoo',am:'እገዛ እና መረጃ',en:'Help & information'})[S.lang] || 'Help & information'}</b>
   <a class="ec-setting-link" href="/docs/privacy-policy.html" target="_blank" rel="noopener">🔐 ${({om:'Imaammata dhuunfaa',am:'የግላዊነት ፖሊሲ',en:'Privacy policy'})[S.lang] || 'Privacy policy'}</a>
@@ -933,7 +935,7 @@ function mainView() {
   var gunread = S.groups.reduce(function (a, g) { return a + (g.unread || 0); }, 0);
   var items = [['chats','💬'],['contacts','👤'],['groups','👥'],['profile','👤']];
   var menu = S.menuOpen ? '<div class="ec-menu"><button onclick="go(\'wallet\');S.menuOpen=false">🪙 Wallet</button><button onclick="go(\'settings\');S.menuOpen=false">⚙️ Settings</button><button onclick="go(\'calls\');S.menuOpen=false">📞 Calls</button><button onclick="go(\'profile\');S.menuOpen=false">👤 My profile</button></div>' : '';
-  return (S.online ? '' : '<div class="ban">'+t('offline')+'</div>') + '<div class="top">'+(S.tab!=='chats'&&S.tab!=='contacts'&&S.tab!=='groups'&&S.tab!=='profile'?'<button class="ec-menu-btn" onclick="go(\'chats\')" aria-label="Back">←</button>':'<span></span>')+'<span>Ethio Call</span><button class="ec-menu-btn" onclick="S.menuOpen=!S.menuOpen;render()" aria-label="Open menu">☰</button></div>'+menu+'<div class="pg">'+b+'</div><div class="nav">'+items.map(function(i){return '<div class="'+(S.tab===i[0]?'on':'')+'" onclick="go(\''+i[0]+'\')">'+i[1]+(i[0]==='chats'&&unread?'<span class="dot">'+unread+'</span>':'')+(i[0]==='groups'&&gunread?'<span class="dot">'+gunread+'</span>':'')+'<br>'+(i[0]==='profile'?'Profile':t(i[0]))+'</div>';}).join('')+'</div>';
+  return (S.online ? '' : '<div class="ban">'+t('offline')+'</div>') + '<div class="top">'+(S.tab!=='chats'&&S.tab!=='contacts'&&S.tab!=='groups'&&S.tab!=='profile'?'<button class="ec-menu-btn" onclick="go(\'chats\')" aria-label="Back">←</button>':'<span></span>')+'<span>Ethio Call</span><button class="ec-menu-btn" onclick="S.menuOpen=!S.menuOpen;render()" aria-label="Open menu">☰</button></div>'+menu+'<div class="pg">'+b+'</div><div class="nav" role="navigation" aria-label="Main navigation">'+items.map(function(i){return '<div role="button" tabindex="0" aria-current="'+(S.tab===i[0]?'page':'false')+'" aria-label="'+esc(i[1]+' '+(i[0]==='profile'?'Profile':t(i[0])))+'" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();go(\''+i[0]+'\')}" class="'+(S.tab===i[0]?'on':'')+'" onclick="go(\''+i[0]+'\')">'+i[1]+(i[0]==='chats'&&unread?'<span class="dot">'+unread+'</span>':'')+(i[0]==='groups'&&gunread?'<span class="dot">'+gunread+'</span>':'')+'<br>'+(i[0]==='profile'?'Profile':t(i[0]))+'</div>';}).join('')+'</div>';
 }
 /* ---------- chat screen ---------- */
 function fmtDur(s) { s = Math.round(s || 0); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
@@ -1052,7 +1054,7 @@ function render() {
   var h = (IS_NATIVE_APP && SHOW_WELCOME) ? loginView() : (S.loading ? '<div class="c" style="padding-top:30vh;font-size:20px">Ethio Call...</div>' : !S.me ? loginView() : mainView());
   if (S.me && S.chat) h += chatView(); else if (S.me && S.grp) h += groupView();
   if (S.call) h += callView();
-  if (S.msg) h += `<div class="toast">${esc(S.msg)}</div>`;
+  if (S.msg) h += `<div class="toast" role="status" aria-live="polite" aria-atomic="true">${esc(S.msg)}</div>`;
   $('app').innerHTML = h;
   applyA11y();
   syncAd(); syncVideo();
