@@ -164,12 +164,18 @@ var esc = function (s) {
 var safeName = function (n) { return String(n || 'file').replace(/[^\w.\- ]/g, '_'); };
 
 async function api(p, m, b) {
+  var timer = null;
   try {
     var h = {'Content-Type': 'application/json'};
     if (S.token) h.Authorization = 'Bearer ' + S.token;
-    var r = await fetch(p, {method: m || 'GET', headers: h, body: b ? JSON.stringify(b) : undefined});
-    return await r.json();
-  } catch (e) { return {error: 'Network error'}; }
+    var ac = new AbortController();
+    timer = setTimeout(function () { ac.abort(); }, 15000);
+    var r = await fetch(p, {method: m || 'GET', headers: h, body: b ? JSON.stringify(b) : undefined, signal: ac.signal});
+    var data = await r.json();
+    if (!r.ok && !data.error) data.error = 'Request failed (' + r.status + ')';
+    return data;
+  } catch (e) { return {error: e && e.name === 'AbortError' ? 'Request timeout' : 'Network error'}; }
+  finally { if (timer) clearTimeout(timer); }
 }
 
 function toast(m, ms) {
@@ -850,21 +856,47 @@ async function saveProfile() {
 }
 
 async function boot() {
-  var me = await api('/me');
-  if (!me || !me.id) { S.loading = false; return me && me.error === 'Network error' ? (S.msg = me.error, render()) : logout(); }
-  S.me = me;
-  await Promise.all([loadWallet(), loadBlocks(),
-    api('/chats').then(function (c) { if (Array.isArray(c)) S.chats = c; }),
-    api('/packages').then(function (p) { if (Array.isArray(p)) S.pkgs = p; }),
-    api('/pay-info').then(function (i) { if (i && i.method) S.payInfo = i; }),
-    loadReqs(), loadBonus(), loadAds(),
-    api('/groups').then(function (g) { if (Array.isArray(g)) S.groups = g; }),
-    api('/ice').then(function (i) { if (i.iceServers) iceServers = i.iceServers; })]);
-  S.loading = false;
-  connect();
-  render();
-  pushOn();
-  joinPending();
+  try {
+    var me = await api('/me');
+    if (!me || !me.id) {
+      S.loading = false;
+      if (me && (me.error === 'Network error' || me.error === 'Request timeout')) {
+        S.msg = 'Connection is slow. Please try again.';
+        render();
+      } else {
+        await logout();
+      }
+      return;
+    }
+    S.me = me;
+    var jobs = [
+      function () { return loadWallet(); },
+      function () { return loadBlocks(); },
+      function () { return api('/chats').then(function (c) { if (Array.isArray(c)) S.chats = c; }); },
+      function () { return api('/packages').then(function (p) { if (Array.isArray(p)) S.pkgs = p; }); },
+      function () { return api('/pay-info').then(function (i) { if (i && i.method) S.payInfo = i; }); },
+      function () { return loadReqs(); },
+      function () { return loadBonus(); },
+      function () { return loadAds(); },
+      function () { return api('/groups').then(function (g) { if (Array.isArray(g)) S.groups = g; }); },
+      function () { return api('/ice').then(function (i) { if (i && i.iceServers) iceServers = i.iceServers; }); }
+    ];
+    await Promise.all(jobs.map(function (job) {
+      return Promise.resolve().then(job).catch(function () { return null; });
+    }));
+  } catch (e) {
+    S.msg = 'Some information could not be loaded. Please check your connection.';
+  } finally {
+    S.loading = false;
+    if (S.me) {
+      connect();
+      render();
+      pushOn();
+      joinPending();
+    } else {
+      render();
+    }
+  }
 }
 
 /* ---------- messages ---------- */
