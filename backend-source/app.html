@@ -888,13 +888,13 @@ async function boot() {
     S.msg = 'Some information could not be loaded. Please check your connection.';
   } finally {
     S.loading = false;
+    // Always remove the loading screen before optional realtime/push setup.
+    try { render(); } catch (renderError) { console.error('Initial render failed:', renderError); }
     if (S.me) {
-      connect();
-      render();
-      pushOn();
-      joinPending();
-    } else {
-      render();
+      try { connect(); } catch (connectError) { console.error('Realtime connection failed:', connectError); }
+      try { Promise.resolve(pushOn()).catch(function (e) { console.warn('Push setup skipped:', e); }); } catch (pushError) {}
+      try { Promise.resolve(joinPending()).catch(function (e) { console.warn('Pending join skipped:', e); }); } catch (joinError) {}
+      try { render(); } catch (renderError) { console.error('Final render failed:', renderError); }
     }
   }
 }
