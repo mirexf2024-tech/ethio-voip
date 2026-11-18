@@ -72,7 +72,7 @@ function abuseLimit({ windowMs=60000, max=120, keyFn, message='Too many requests
   };
 }
 const apiLimiter=abuseLimit({windowMs:60000,max:600});
-const otpIpLimiter=abuseLimit({windowMs:15*60000,max:8,message:'Too many verification requests from this network. Please wait.'});
+const otpIpLimiter=abuseLimit({windowMs:15*60000,max:60,message:'Too many verification requests from this network. Please wait.'});
 const otpPhoneLimiter=abuseLimit({windowMs:60*60000,max:5,keyFn:req=> 'otp-phone:'+String(req.body?.phone||'').replace(/\D/g,'').slice(-15),message:'Too many verification attempts for this number. Please wait.'});
 app.use('/auth', otpIpLimiter, otpPhoneLimiter);
 app.use(apiLimiter);
