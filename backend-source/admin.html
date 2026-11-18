@@ -159,7 +159,10 @@ async function loadHealth() {
   };
   $('health').innerHTML = item('SMS gateway', !!r.sms) +
     item('Telegram verification', !!r.tg) + item('Translation service', !!r.tr) +
-    item('Firebase push notifications', !!r.fcm);
+    item('Firebase push notifications', !!r.fcm) +
+    item('International phone format (delivery depends on SMS provider)', !!r.international_phone_format) +
+    item('Abuse reporting', !!r.abuse_reports) + item('TURN calling relay', !!r.turn) +
+    item('Rewarded ads provider', !!r.rewarded_ads);
 }
 
 async function loadReqs() {
