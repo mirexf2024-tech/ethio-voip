@@ -29,15 +29,15 @@ const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
 function normalizePhone(p) {
   if (typeof p !== 'string') return '';
   const raw = p.trim();
-  const digits = raw.replace(/\\D/g, '');
+  const digits = raw.replace(/\D/g, '');
   if (!digits) return '';
   if (raw.startsWith('+')) return '+' + digits;
   if (raw.startsWith('00')) return '+' + digits.slice(2);
   if (digits.startsWith('251')) return '+' + digits;
   // Ethiopian local-format convenience; international numbers should include +country code.
   if (digits.startsWith('0')) return '+251' + digits.slice(1);
-  if (/^[79]\\d{8}$/.test(digits)) return '+251' + digits;
-  if (/^[1-9]\\d{7,14}$/.test(digits)) return '+' + digits;
+  if (/^[79]\d{8}$/.test(digits)) return '+251' + digits;
+  if (/^[1-9]\d{7,14}$/.test(digits)) return '+' + digits;
   return '';
 }// Set NODE_ENV=production on Render to disable dev-only features
 const DEV = process.env.NODE_ENV !== 'production';
