@@ -54,6 +54,21 @@ async function init() {
   );
   create index if not exists messages_to_idx on messages(to_id, id);
   create index if not exists messages_from_idx on messages(from_id, id);
+  create table if not exists abuse_reports(
+    id bigserial primary key,
+    reporter_id int not null references users(id) on delete cascade,
+    target_id int not null references users(id) on delete cascade,
+    message_id int references messages(id) on delete set null,
+    reason text not null,
+    details text,
+    status text not null default 'pending' check (status in ('pending','reviewed','actioned','dismissed')),
+    admin_note text,
+    created_at timestamptz not null default now(),
+    reviewed_at timestamptz,
+    check (reporter_id <> target_id)
+  );
+  create index if not exists abuse_reports_status_idx on abuse_reports(status, created_at desc);
+  create index if not exists abuse_reports_target_idx on abuse_reports(target_id, created_at desc);
   create table if not exists blocks(
     user_id int references users(id) on delete cascade,
     blocked_id int references users(id) on delete cascade,
