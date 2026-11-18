@@ -518,13 +518,7 @@ function settingsTab() {
   var tg = function (k, label) {
     return `<div class="row"><span>${label}</span><button class="${S.set[k] ? '' : 'x'}" onclick="tog('${k}')">${S.set[k] ? t('on') : t('off')}</button></div>`;
   };
-  return `<div class="card">${avatar(ph, nm ? nm[0].toUpperCase() : '👤')}
-  <label class="s c" style="display:block"><input type="file" accept="image/*" style="display:none" onchange="pickPhoto(this)"><u>📷 ${t('photo')}</u></label>
-  <input id="nm" placeholder="${t('name')}" maxlength="60" value="${esc(nm)}">
-  <input id="ab" placeholder="${t('aboutMe')}" maxlength="140" value="${esc(ab)}">
-  <div class="s c">${esc(m.phone)}</div>
-  <button onclick="saveProfile()">${t('save')}</button></div>
-  <div class="card"><b>${t('language')}</b>${langSel()}</div>
+  return `<div class="card"><b>${t('language')}</b>${langSel()}</div>
   <div class="card"><b>${t('calls')}</b>${tg('sound', t('sound'))}${tg('vibrate', t('vibrate'))}${tg('saver', t('saver'))}</div>
   <div class="card"><b>${t('notifs')}</b><div class="row"><span class="s">${esc(np)}</span>${np === 'granted' || np === 'unsupported' ? '' : `<button onclick="askNotif()">${t('enable')}</button>`}</div>
   <div class="s">${t('notifHint')}</div>${np === 'granted' ? `<button class="x" onclick="testPush()">${t('testNotif')}</button>` : ''}</div>
@@ -543,7 +537,10 @@ function contactsTab() {
   var rows=(S.phoneContacts||[]).filter(function(c){return !q||[c.name,c.phone].some(function(v){return String(v||'').toLowerCase().indexOf(q)!==-1;});});
   return '<section class="tg-chat-head"><h2>'+t('contacts')+'</h2><label class="tg-search">⌕ <input placeholder="Search contacts" value="'+esc(S.d_contactSearch||'')+'" oninput="S.d_contactSearch=this.value;render()"></label></section><div class="tg-chat-list">'+rows.map(function(c){return '<div class="tg-chat-row" onclick="openChat(\''+esc(c.phone)+'\')">'+avatar(null,(c.name||'#')[0].toUpperCase(),'sm')+'<div class="tg-chat-copy"><b>'+esc(c.name||c.phone)+'</b><span class="tg-preview">'+esc(c.phone)+'</span></div></div>';}).join('')+'<div class="tg-empty">'+(rows.length?'':'No contacts loaded. Open Settings to load phone contacts.')+'</div></div>';
 }
-function profileTab(){ return settingsTab(); }
+function profileTab(){
+  var m=S.me, ph=S.photo||m.avatar_url, nm=S.d_nm!=null?S.d_nm:(m.name||''), ab=S.d_ab!=null?S.d_ab:(m.about||''), un=S.d_un!=null?S.d_un:(m.username||'');
+  return '<section class="tg-chat-head"><div class="tg-kicker">ETHIO CALL</div><h2>My Profile</h2></section><div class="card">'+avatar(ph,nm?nm[0].toUpperCase():'👤')+'<label class="s c" style="display:block"><input type="file" accept="image/*" style="display:none" onchange="pickPhoto(this)"><u>📷 '+t('photo')+'</u></label><input id="nm" placeholder="'+t('name')+'" maxlength="60" value="'+esc(nm)+'"><input id="un" placeholder="Username" maxlength="32" autocapitalize="none" value="'+esc(un)+'"><input id="ab" placeholder="'+t('aboutMe')+'" maxlength="140" value="'+esc(ab)+'"><div class="s c">'+esc(m.phone)+'</div><button onclick="saveProfile()">'+t('save')+'</button></div>';
+}
 function mainView() {
   var b = S.tab === 'chats' ? chatsTab() : S.tab === 'contacts' ? contactsTab() : S.tab === 'groups' ? groupsTab() : S.tab === 'profile' ? profileTab() : S.tab === 'wallet' ? walletTab() : S.tab === 'calls' ? callsTab() : settingsTab();
   var unread = S.chats.reduce(function (a, c) { return a + (c.unread || 0); }, 0);
