@@ -206,6 +206,7 @@ var IS_NATIVE_APP = !!(window.Capacitor && window.Capacitor.isNativePlatform && 
 var joinM = /[?&]join=([A-Za-z0-9_-]{8,40})/.exec(location.search);
   if (joinM) { localStorage.setItem('jn', joinM[1]); history.replaceState(null, '', location.pathname); }
 } catch (e) {}
+var SHOW_WELCOME = IS_NATIVE_APP;
 var socket = null, pc = null, localStream = null, pendingIce = [], iceServers = [{urls: 'stun:stun.l.google.com:19302'}];
 var tickT = null, ringT = null, actx = null, M = {}, curAudio = null;
 var VR = {mr: null, chunks: [], t0: 0, timer: null, stream: null, cancel: false};
@@ -489,13 +490,13 @@ function langSel() {
 }
 
 function finishWelcome() {
-  try { localStorage.setItem('ec_welcome_seen_v2', '1'); } catch (e) {}
+  SHOW_WELCOME = false;
   render();
 }
 
 function loginView() {
   var m = S.meth;
-  if (IS_NATIVE_APP && localStorage.getItem('ec_welcome_seen_v2') !== '1') {
+  if (IS_NATIVE_APP && SHOW_WELCOME) {
     var copy = S.lang === 'om'
       ? {tag:'Stay Connected', lead:'Firoottan kee fi hiriyoota kee waliin wal qunnami.', start:'Seensa', login:'Login', privacy:'Imaammata Dhuunfaa'}
       : S.lang === 'am'
@@ -999,7 +1000,7 @@ function render() {
   var af = document.activeElement && document.activeElement.id;
   var b0 = $('msgs'), keep = b0 ? b0.scrollTop : 0;
   var atEnd = b0 ? (b0.scrollHeight - b0.scrollTop - b0.clientHeight < 100) : true;
-  var h = S.loading ? '<div class="c" style="padding-top:30vh;font-size:20px">Ethio Call...</div>' : !S.me ? loginView() : mainView();
+  var h = (IS_NATIVE_APP && SHOW_WELCOME) ? loginView() : (S.loading ? '<div class="c" style="padding-top:30vh;font-size:20px">Ethio Call...</div>' : !S.me ? loginView() : mainView());
   if (S.me && S.chat) h += chatView(); else if (S.me && S.grp) h += groupView();
   if (S.call) h += callView();
   if (S.msg) h += `<div class="toast">${esc(S.msg)}</div>`;
