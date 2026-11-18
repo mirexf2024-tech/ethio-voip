@@ -293,10 +293,21 @@ app.get('/sounds/:file', (req, res) => {
 app.get('/health', async (_, res) => {
   let database = false;
   try { await pool.query('SELECT 1'); database = true; } catch (_) {}
+  let groupLiveTables = false;
+  if (database) {
+    try {
+      const tables = await pool.query(
+        "select to_regclass('public.group_lives') is not null as lives, to_regclass('public.group_live_participants') is not null as participants"
+      );
+      groupLiveTables = !!(tables.rows[0] && tables.rows[0].lives && tables.rows[0].participants);
+    } catch (_) {}
+  }
+  const liveKitConfigured = !!(process.env.LIVEKIT_URL && process.env.LIVEKIT_API_KEY && process.env.LIVEKIT_API_SECRET);
   const ready = database;
   res.status(ready ? 200 : 503).json({
     ok: ready,
     database,
+    group_live: { configured: liveKitConfigured, tables_ready: groupLiveTables },
     sms: SMS_ON,
     tg: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_BOT_USERNAME && process.env.TELEGRAM_WEBHOOK_SECRET),
     tr: !!(process.env.GOOGLE_TRANSLATE_KEY || process.env.TRANSLATE_EMAIL),
