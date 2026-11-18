@@ -167,6 +167,40 @@ button:active{transform:scale(.985);filter:brightness(.97)}button.g{background:l
 .chatv{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;max-width:1120px;margin:0 auto;box-shadow:0 0 0 100vmax #061a32aa}.chatv .top{flex:none;min-height:66px}.chatv .msgs{flex:1;min-height:0;overflow:auto;padding:16px max(14px,calc((100% - 760px)/2));background:linear-gradient(180deg,#f2f6fb,#eaf1f9)}.chatv .comp{flex:none;padding:10px max(12px,calc((100% - 760px)/2));padding-bottom:calc(10px + env(safe-area-inset-bottom))}.chatv .comp input{min-width:0;flex:1}.chatv .comp button{width:auto;min-width:44px}.chatv .b{max-width:min(78%,560px);padding:10px 13px;line-height:1.45}.ov{z-index:120;background:linear-gradient(145deg,#071d3b,#0b4d94);padding:24px}.ov .av{background:#f4c542;color:#092b55}.ov button{max-width:320px;margin:6px auto}
 .ec-setting-link{display:flex;align-items:center;min-height:46px;padding:10px 2px;border-bottom:1px solid #edf1f6;color:#174a7e;text-decoration:none;font-weight:650}.ec-setting-link:last-of-type{border-bottom:0}
 
+
+/* Ethio Call first-launch onboarding — integrated with existing OTP authentication */
+.ec-onboard{min-height:100svh;max-width:480px;margin:0 auto;padding:calc(22px + env(safe-area-inset-top)) 22px calc(22px + env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden;background:radial-gradient(circle at 50% 36%,#174b8c55,transparent 38%),#071326;color:#f8fafc}
+.ec-onboard-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ec-onboard-brand{display:flex;align-items:center;gap:11px;min-width:0}
+.ec-onboard-brand img{width:48px;height:48px;border-radius:13px;box-shadow:0 8px 24px #0005}
+.ec-onboard-brand b{display:block;font-size:21px;letter-spacing:-.6px}
+.ec-onboard-brand small{display:block;color:#f4c542;font-size:11px}
+.ec-onboard-lang select{width:auto;min-height:38px;margin:0;padding:7px 10px;background:#13243c;color:#fff;border:1px solid #31527a;border-radius:22px;font-size:12px}
+.ec-onboard-body{position:relative;flex:1;min-height:350px;display:flex;align-items:center;padding:18px 0}
+.ec-onboard-track-window{width:100%;overflow:hidden}
+.ec-onboard-track{display:flex;transition:transform .32s ease}
+.ec-onboard-slide{flex:0 0 100%;min-width:100%;padding:8px 18px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ec-onboard-art{width:170px;height:170px;border-radius:42px;display:grid;place-items:center;margin-bottom:26px;background:linear-gradient(145deg,#123c70,#10213a);border:1px solid #31527a;box-shadow:0 18px 45px #0004;font-size:65px;position:relative}
+.ec-onboard-art:after{content:"";position:absolute;inset:12px;border:1px solid #f4c54266;border-radius:32px}
+.ec-onboard-slide h1{font-size:25px;line-height:1.2;margin:0 0 12px;color:#fff;letter-spacing:-.6px}
+.ec-onboard-slide p{font-size:14px;line-height:1.65;color:#a9bad0;margin:0;max-width:330px}
+.ec-onboard-tech{display:inline-flex;align-items:center;gap:7px;margin-top:14px;padding:6px 11px;border:1px solid #31527a;border-radius:22px;color:#f4c542;font-size:11px;font-weight:700;background:#10213a}
+.ec-onboard-arrow{position:absolute;top:50%;transform:translateY(-30%);z-index:2;width:34px;height:34px;padding:0;border-radius:50%;background:#142b49;border:1px solid #31527a;color:#dbeafe;box-shadow:none}
+.ec-onboard-arrow.left{left:-3px}.ec-onboard-arrow.right{right:-3px}
+.ec-onboard-foot{padding-top:8px}
+.ec-onboard-dots{display:flex;justify-content:center;gap:7px;margin:0 0 22px}
+.ec-onboard-dot{width:7px;height:7px;min-height:7px;padding:0;margin:0;border:0;border-radius:9px;background:#3a4d67;box-shadow:none}
+.ec-onboard-dot.active{width:22px;background:#f4c542}
+.ec-onboard-actions{display:grid;gap:11px}
+.ec-onboard-primary,.ec-onboard-secondary{width:100%;min-height:52px;margin:0;border-radius:14px;font-size:15px;font-weight:800}
+.ec-onboard-primary{background:linear-gradient(110deg,#0753a1,#1672c8);color:#fff;box-shadow:0 9px 25px #0753a144}
+.ec-onboard-secondary{background:transparent;border:1px solid #4388cf;color:#dbeafe;box-shadow:none}
+.ec-onboard-explore{display:block;width:auto;min-height:36px;margin:10px auto 0;background:transparent;color:#9db1ca;text-decoration:underline;text-underline-offset:3px;box-shadow:none;font-size:12px}
+.ec-auth-back{display:flex;align-items:center;gap:8px;width:auto;margin:0 0 10px;padding:7px 10px;background:transparent;color:#174a7e;box-shadow:none}
+.ec-auth-mode{font-size:12px;font-weight:800;letter-spacing:1px;color:#d49a12;margin-bottom:7px}
+@media(max-height:690px){.ec-onboard{padding-top:14px;padding-bottom:14px}.ec-onboard-body{min-height:290px}.ec-onboard-art{width:130px;height:130px;font-size:50px;margin-bottom:16px}.ec-onboard-slide h1{font-size:21px}}
+@media(prefers-reduced-motion:reduce){.ec-onboard-track{transition:none}}
+
 </style>
 </head>
 <body>
@@ -183,7 +217,7 @@ var T = {
 };
 var S = {lang: localStorage.getItem('lg') || 'om', token: localStorage.getItem('tk'), me: null, coins: 0, hist: [], pkgs: [],
   bonus: null, meth: {sms: false, tg: false, tr: false}, tgLink: '', chats: [], chat: null, groups: [], grp: null, newGrp: false, ads: null, blocks: [], payInfo: null, payPkg: null, reqs: [], recording: false, stick: false, set: {sound: true, vibrate: true, saver: true},
-  tab: 'chats', dial: '', call: null, online: false, msg: '', loading: false, otpSent: false, devCode: '', photo: null};
+  tab: 'chats', dial: '', call: null, online: false, msg: '', loading: false, otpSent: false, devCode: '', photo: null, authMode: null, onboardIndex: 0};
 try { Object.assign(S.set, JSON.parse(localStorage.getItem('st') || '{}')); } catch (e) {}
 try {
   var refM = /[?&]ref=([A-Za-z0-9]{8})/.exec(location.search);
@@ -378,9 +412,55 @@ function langSel() {
   return '<select onchange="setLang(this.value)">' + o('om', 'Afaan Oromoo') + o('am', 'አማርኛ') + o('en', 'English') + '</select>';
 }
 
+
+var EC_ONBOARDING = {
+  om: [
+    ['Baga Gara Ethio Call Dhuftan!','Maatii, hiriyoota fi hawaasa kee waliin sagalee, viidiyoo fi ergaadhaan wal qunnami.','Wal qunnamtii keenya'],
+    ['Bilbila Sagalee fi Viidiyoo','WebRTC fayyadamuun bilbila sagalee fi viidiyoo kallattiin taasisi.','WebRTC • Data Saver'],
+    ['Ergaa Dhuunfaa fi Garee','Ergaa, suuraa, sagalee fi faayilii namoota waliin qoodi.','Real-time messaging • Socket.IO'],
+    ['Group Live','Haasawa garee live irratti hirmaadhu. Dandeettiin haaraa hanga dubbataa 8 deeggaru qophaa’aa jira.','Group Live • Hanga dubbataa 8'],
+    ['Afaan Kee Filadhu','Afaan Oromoo, Amaariffaa fi English gidduutti yeroo barbaadde jijjiiri.','OM • AM • EN'],
+    ['Iccitii fi To’annoo','Setting, privacy fi data-saver filannoowwan kee to’adhu.','Privacy controls • Low-data mode']
+  ],
+  am: [
+    ['ወደ Ethio Call እንኳን በደህና መጡ!','ከቤተሰብዎ፣ ጓደኞችዎ እና ማህበረሰብዎ ጋር በድምፅ፣ በቪዲዮ እና በመልዕክት ይገናኙ።','የእኛ ግንኙነት'],
+    ['የድምፅ እና የቪዲዮ ጥሪ','በWebRTC ቴክኖሎጂ የድምፅ እና የቪዲዮ ጥሪ ያድርጉ።','WebRTC • Data Saver'],
+    ['የግል እና የቡድን መልዕክቶች','መልዕክቶችን፣ ፎቶዎችን፣ ድምፆችን እና ፋይሎችን ያጋሩ።','Real-time messaging • Socket.IO'],
+    ['Group Live','በቀጥታ የቡድን ውይይት ይሳተፉ። እስከ 8 ተናጋሪዎች የሚደግፈው ባህሪ በዝግጅት ላይ ነው።','Group Live • እስከ 8 ተናጋሪዎች'],
+    ['ቋንቋዎን ይምረጡ','በኦሮምኛ፣ በአማርኛ እና በእንግሊዝኛ መካከል ይቀያይሩ።','OM • AM • EN'],
+    ['ግላዊነት እና ቁጥጥር','የቅንብር፣ የግላዊነት እና የዳታ ቁጠባ አማራጮችን ይቆጣጠሩ።','Privacy controls • Low-data mode']
+  ],
+  en: [
+    ['Welcome to Ethio Call!','Stay close to family, friends and your community through voice, video and messaging.','Our way to connect'],
+    ['Voice and Video Calls','Make direct voice and video calls powered by WebRTC technology.','WebRTC • Data Saver'],
+    ['Private and Group Messaging','Share text, photos, voice notes and files with people who matter.','Real-time messaging • Socket.IO'],
+    ['Group Live','Join live group conversations. The experience for up to 8 speakers is being prepared.','Group Live • Up to 8 speakers'],
+    ['Choose Your Language','Switch between Afaan Oromoo, Amharic and English.','OM • AM • EN'],
+    ['Privacy and Control','Manage your settings, privacy options and data-saver preferences.','Privacy controls • Low-data mode']
+  ]
+};
+function openEthioAuth(mode) { S.authMode = mode; S.otpSent = false; S.devCode = ''; S.tgLink = ''; render(); }
+function backToEthioWelcome() { S.authMode = null; S.otpSent = false; S.tgLink = ''; render(); }
+function moveEthioSlide(step) { var n = EC_ONBOARDING[S.lang] || EC_ONBOARDING.en; S.onboardIndex = (S.onboardIndex + step + n.length) % n.length; render(); }
+function ethioWelcomeView() {
+  var slides = EC_ONBOARDING[S.lang] || EC_ONBOARDING.en;
+  var i = Math.min(S.onboardIndex || 0, slides.length - 1), item = slides[i];
+  var icons = ['🌍','📞','💬','🎙️','🌐','🛡️'];
+  return '<main class="ec-onboard" ontouchstart="ethioTouchStart(event)" ontouchend="ethioTouchEnd(event)">' +
+    '<header class="ec-onboard-head"><div class="ec-onboard-brand"><img src="/ethio-call-logo.svg" alt="Ethio Call logo"><span><b>Ethio Call</b><small>wal qunnamtii keenya</small></span></div><div class="ec-onboard-lang">'+langSel()+'</div></header>' +
+    '<section class="ec-onboard-body"><button class="ec-onboard-arrow left" onclick="moveEthioSlide(-1)" aria-label="Previous">‹</button><div class="ec-onboard-track-window"><div class="ec-onboard-track" style="transform:translateX(-'+(i*100)+'%)">' +
+    slides.map(function(s,j){return '<article class="ec-onboard-slide" aria-hidden="'+(j!==i)+'"><div class="ec-onboard-art" aria-hidden="true">'+icons[j]+'</div><h1>'+esc(s[0])+'</h1><p>'+esc(s[1])+'</p><span class="ec-onboard-tech">'+esc(s[2])+'</span></article>';}).join('') +
+    '</div></div><button class="ec-onboard-arrow right" onclick="moveEthioSlide(1)" aria-label="Next">›</button></section>' +
+    '<footer class="ec-onboard-foot"><div class="ec-onboard-dots">'+slides.map(function(s,j){return '<button class="ec-onboard-dot '+(j===i?'active':'')+'" onclick="S.onboardIndex='+j+';render()" aria-label="Slide '+(j+1)+'"></button>';}).join('')+'</div>' +
+    '<div class="ec-onboard-actions"><button class="ec-onboard-primary" onclick="openEthioAuth(\'signup\')">'+({om:'Herrega Haaraa Uumi',am:'አዲስ መለያ ይፍጠሩ',en:'Create Account / Sign Up'})[S.lang]+'</button><button class="ec-onboard-secondary" onclick="openEthioAuth(\'login\')">'+({om:'Seeni',am:'ግባ',en:'Login / Sign In'})[S.lang]+'</button></div><button class="ec-onboard-explore" onclick="moveEthioSlide(1)">'+({om:'Tajaajiloota ilaali →',am:'ባህሪያቱን ይመልከቱ →',en:'Explore features →'})[S.lang]+'</button></footer></main>';
+}
+var ecTouchX = null;
+function ethioTouchStart(e) { if (e.touches && e.touches.length) ecTouchX = e.touches[0].clientX; }
+function ethioTouchEnd(e) { if (ecTouchX === null || !e.changedTouches || !e.changedTouches.length) return; var dx=e.changedTouches[0].clientX-ecTouchX; ecTouchX=null; if(Math.abs(dx)>45) moveEthioSlide(dx<0?1:-1); }
+
 function loginView() {
   var m = S.meth, welcome = {om:['Baga nagaan dhuftan!','Maatii, hiriyoota fi hawaasa kee waliin walitti hidhami.','Ergaa • Bilbila • Hawaasa'],am:['እንኳን ደህና መጡ!','ከቤተሰብዎ፣ ጓደኞችዎ እና ማህበረሰብዎ ጋር ይገናኙ።','መልዕክት • ጥሪ • ማህበረሰብ'],en:['Welcome to Ethio Call!','Stay close to family, friends and your community.','Messages • Calls • Communities']}[S.lang] || ['Welcome to Ethio Call!','Stay close to family, friends and your community.','Messages • Calls • Communities'];
-  return `<div class="ec-welcome"><div class="ec-welcome-mark">E<span>✦</span></div><div class="ec-welcome-copy"><div class="ec-kicker">ETHIO CALL</div><h1>${welcome[0]}</h1><p>${welcome[1]}</p><div class="ec-feature-line">${welcome[2]}</div></div><div class="ec-orbit ec-orbit-a"></div><div class="ec-orbit ec-orbit-b"></div></div><div class="pg"><div class="card ec-login-card">${langSel()}
+  return `<div class="pg"><button class="ec-auth-back" onclick="backToEthioWelcome()">← ${({om:'Duubatti deebi’i',am:'ተመለስ',en:'Back'})[S.lang]}</button><div class="ec-auth-mode">${S.authMode === 'signup' ? ({om:'HERREGA HAARAA',am:'አዲስ መለያ',en:'CREATE ACCOUNT'})[S.lang] : ({om:'HERREGA KEETTI SEENI',am:'ወደ መለያዎ ይግቡ',en:'SIGN IN'})[S.lang]}</div></div><div class="ec-welcome"><div class="ec-welcome-mark">E<span>✦</span></div><div class="ec-welcome-copy"><div class="ec-kicker">ETHIO CALL</div><h1>${welcome[0]}</h1><p>${welcome[1]}</p><div class="ec-feature-line">${welcome[2]}</div></div><div class="ec-orbit ec-orbit-a"></div><div class="ec-orbit ec-orbit-b"></div></div><div class="pg"><div class="card ec-login-card">${langSel()}
   <div class="ec-login-title">${({om:'Lakkoofsa bilbilaa kee galchi',am:'ስልክ ቁጥርዎን ያስገቡ',en:'Enter your phone number'})[S.lang] || 'Enter your phone number'}</div>
   <input id="ph" type="tel" autocomplete="tel" placeholder="${t('phone')}" value="${esc(S.d_ph || '+251')}">
   <div class="s">${({om:'Lakkoofsa biyya keessaa +251 ykn biyya alaa +koodii biyyaatiin galchi.',am:'የአገር ውስጥ +251 ወይም የውጭ አገር ቁጥርን ከአገር ኮድ ጋር ያስገቡ።',en:'Enter an Ethiopian +251 number or an international number with its +country code.'})[S.lang]}</div>
@@ -756,7 +836,7 @@ function render() {
   var af = document.activeElement && document.activeElement.id;
   var b0 = $('msgs'), keep = b0 ? b0.scrollTop : 0;
   var atEnd = b0 ? (b0.scrollHeight - b0.scrollTop - b0.clientHeight < 100) : true;
-  var h = S.loading ? '<div class="c" style="padding-top:30vh;font-size:20px">Ethio Call...</div>' : !S.me ? loginView() : mainView();
+  var h = S.loading ? '<div class="c" style="padding-top:30vh;font-size:20px">Ethio Call...</div>' : !S.me ? (S.authMode ? loginView() : ethioWelcomeView()) : mainView();
   if (S.me && S.chat) h += chatView(); else if (S.me && S.grp) h += groupView();
   if (S.call) h += callView();
   if (S.msg) h += `<div class="toast">${esc(S.msg)}</div>`;
