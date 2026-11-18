@@ -22,20 +22,24 @@ app.set('trust proxy', 1); // Render sits in front of us: needed to see the real
 app.use(cors());
 app.use(express.json({ limit: '3mb' }));
 
-const PHONE = /^\+251[79]\d{8}$/; // Ethio telecom 9..., Safaricom 7...
+const PHONE = /^\+[1-9]\d{7,14}$/; // E.164: country code + subscriber number
 const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
 
 // Cleans the phone: removes spaces/hidden characters, accepts 09..., 07..., 251..., +251...
 function normalizePhone(p) {
   if (typeof p !== 'string') return '';
-  const s = p.replace(/[^\d+]/g, '');
-  if (s.startsWith('+')) return s;
-  if (s.startsWith('251')) return '+' + s;
-  if (s.startsWith('0')) return '+251' + s.slice(1);
-  if (/^[79]\d{8}$/.test(s)) return '+251' + s;
-  return s;
-}
-// Set NODE_ENV=production on Render to disable dev-only features
+  const raw = p.trim();
+  const digits = raw.replace(/\\D/g, '');
+  if (!digits) return '';
+  if (raw.startsWith('+')) return '+' + digits;
+  if (raw.startsWith('00')) return '+' + digits.slice(2);
+  if (digits.startsWith('251')) return '+' + digits;
+  // Ethiopian local-format convenience; international numbers should include +country code.
+  if (digits.startsWith('0')) return '+251' + digits.slice(1);
+  if (/^[79]\\d{8}$/.test(digits)) return '+251' + digits;
+  if (/^[1-9]\\d{7,14}$/.test(digits)) return '+' + digits;
+  return '';
+}// Set NODE_ENV=production on Render to disable dev-only features
 const DEV = process.env.NODE_ENV !== 'production';
 const WELCOME_COINS = parseInt(process.env.WELCOME_COINS || '0', 10); // free coins for new users (keep 0 until real SMS)
 
@@ -262,7 +266,7 @@ app.post('/auth/request-otp', async (req, res) => {
     const phone = normalizePhone(req.body && req.body.phone);
     if (!PHONE.test(phone))
       return res.status(400).json({
-        error: 'Use +251 format',
+        error: 'Use international format, e.g. +2519XXXXXXXX',
         ...(DEV && { debug_body: req.body, debug_phone: phone }),
       });
 
