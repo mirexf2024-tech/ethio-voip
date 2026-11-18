@@ -40,7 +40,7 @@ function normalizePhone(p) {
   if (/^[1-9]\d{7,14}$/.test(digits)) return '+' + digits;
   return '';
 }// Set NODE_ENV=production on Render to disable dev-only features
-const DEV = process.env.NODE_ENV !== 'production';
+const DEV = process.env.ALLOW_DEV_FEATURES === 'true' && process.env.NODE_ENV !== 'production';
 const WELCOME_COINS = parseInt(process.env.WELCOME_COINS || '0', 10); // free coins for new users (keep 0 until real SMS)
 
 const auth = (req, res, next) => {
@@ -211,7 +211,23 @@ app.get('/sounds/:file', (req, res) => {
     if (err && !res.headersSent) res.status(404).end();
   });
 });
-app.get('/health', (_, res) => res.json({ ok: true, sms: SMS_ON, tg: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_BOT_USERNAME && process.env.TELEGRAM_WEBHOOK_SECRET), tr: !!(process.env.GOOGLE_TRANSLATE_KEY || process.env.TRANSLATE_EMAIL), fcm: !!(push && push.isFirebaseReady && push.isFirebaseReady()), international_phone_format: true, abuse_reports: true, turn: !!((process.env.TURN_USERNAME && process.env.TURN_CREDENTIAL) || process.env.ICE_SERVERS), rewarded_ads: false }));
+app.get('/health', async (_, res) => {
+  let database = false;
+  try { await pool.query('SELECT 1'); database = true; } catch (_) {}
+  const ready = database;
+  res.status(ready ? 200 : 503).json({
+    ok: ready,
+    database,
+    sms: SMS_ON,
+    tg: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_BOT_USERNAME && process.env.TELEGRAM_WEBHOOK_SECRET),
+    tr: !!(process.env.GOOGLE_TRANSLATE_KEY || process.env.TRANSLATE_EMAIL),
+    fcm: !!(push && push.isFirebaseReady && push.isFirebaseReady()),
+    international_phone_format: true,
+    abuse_reports: true,
+    turn: !!((process.env.TURN_USERNAME && process.env.TURN_CREDENTIAL) || process.env.ICE_SERVERS),
+    rewarded_ads: false
+  });
+});
 
 // Browser test page for calls (open /test on two phones)
 app.get('/test', (_, res) => res.sendFile(path.join(__dirname, 'test.html')));
@@ -308,9 +324,10 @@ app.post('/auth/request-otp', async (req, res) => {
       return res.json({ ok: true, sms: true });
     }
 
-    // no SMS gateway yet: test mode only (anyone can read the code -> not safe for the public)
-    console.log(`OTP for ${phone}: ${code}`);
-    res.json({ ok: true, ...(DEV && { devCode: code }) });
+    // Never issue or log a readable OTP when the public SMS provider is unavailable.
+    if (!DEV) return res.status(503).json({ error: 'SMS verification is temporarily unavailable. Please try again later.' });
+    console.log(`Development OTP for ${phone}: ${code}`);
+    res.json({ ok: true, devCode: code });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Server error' });
