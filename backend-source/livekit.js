@@ -102,20 +102,26 @@ function setupGroupLive(app, { pool, auth }) {
     const client = roomClient();
     await client.createRoom({ name: roomName, emptyTimeout: 60, maxParticipants: 500 });
     let live;
+    const db = await pool.connect();
     try {
-      const r = await pool.query(
+      await db.query('begin');
+      const r = await db.query(
         "insert into group_lives(group_id,host_id,room_name,status) values($1,$2,$3,'live') returning *",
         [gid, req.user.id, roomName]
       );
       live = r.rows[0];
-      await pool.query(
+      await db.query(
         "insert into group_live_participants(live_id,user_id,role) values($1,$2,'host')",
         [live.id, req.user.id]
       );
+      await db.query('commit');
     } catch (e) {
+      await db.query('rollback').catch(() => {});
       await client.deleteRoom(roomName).catch(() => {});
       if (e.code === '23505') return fail(res, 409, 'A live is already running in this group');
       throw e;
+    } finally {
+      db.release();
     }
     res.status(201).json({
       live: { id: live.id, group_id: gid, room_name: roomName, host_id: req.user.id, status: 'live' },
@@ -151,8 +157,11 @@ function setupGroupLive(app, { pool, auth }) {
     if (!live) return fail(res, 404, 'No live is running in this group');
     if (live.host_id !== req.user.id) return fail(res, 403, 'Only the live host can invite speakers');
     const targetId = Number.parseInt(req.body?.user_id, 10);
-    if (!Number.isSafeInteger(targetId) || targetId < 1) return fail(res, 400, 'Invalid participant');
+    if (!Number.isSafeInteger(targetId) || targetId < 1 || targetId === live.host_id)
+      return fail(res, 400, 'Invalid participant');
     if (!(await member(gid, targetId))) return fail(res, 404, 'Participant is not a member of this group');
+    const previousRole = await participantState(live, targetId);
+    if (previousRole === 'speaker') return res.json({ ok: true, user_id: targetId, role: 'speaker', already_speaker: true });
     const c = await pool.connect();
     try {
       await c.query('begin');
