@@ -126,6 +126,39 @@ button.g{background:linear-gradient(135deg,#16845b,#20a875)}button.r{background:
 button,[role="button"]{touch-action:manipulation}
 img{max-width:100%}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* Ethio Call approved premium UI refresh — preserves existing screen logic */
+:root{--ec-navy:#071d3b;--ec-blue:#0b5bd3;--ec-cyan:#a5e8f5;--ec-gold:#f4c542;--ec-page:#f3f6fb;--ec-ink:#15253b;--ec-muted:#718096;--ec-border:#e7edf5}
+html{background:var(--ec-page)}
+body{max-width:100%;width:100%;min-height:100vh;background:linear-gradient(180deg,#edf4fc 0,#f7f9fc 320px,#f5f7fb 100%);color:var(--ec-ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.005em}
+#app{width:100%;max-width:1120px;min-height:100vh;margin:0 auto;background:transparent}
+.top.ec-appbar{position:sticky;top:0;z-index:80;display:flex;min-height:72px;align-items:center;gap:12px;padding:10px 22px;background:linear-gradient(110deg,#071d3b 0%,#0a4385 72%,#0b5bd3 100%);box-shadow:0 7px 24px #092c5625}
+.top.ec-appbar:after{display:none}
+.ec-brand{display:flex;align-items:center;gap:11px;min-width:0;color:#fff}
+.ec-brand-mark{display:grid;width:42px;height:42px;place-items:center;border-radius:14px;background:linear-gradient(145deg,#ffe69a,#f4c542);color:#092b55;font-size:22px;font-weight:950;box-shadow:0 5px 14px #001b3d55}
+.ec-brand b{display:block;font-size:17px;line-height:1.2}.ec-brand small{display:block;margin-top:3px;color:#c6dcf5;font-size:10px;font-weight:500}
+.ec-appbar-title{margin-left:auto;color:#dcecff;font-size:13px;font-weight:700}
+.ec-menu-btn{width:42px;height:42px;min-height:42px;margin:0;padding:0;border:1px solid #ffffff35;border-radius:13px;background:#ffffff16;color:#fff;font-size:20px;box-shadow:none}
+.pg{padding:20px 18px calc(100px + env(safe-area-inset-bottom) + var(--adh,0px));min-height:calc(100vh - 72px)}
+.ec-welcome-strip{position:relative;display:flex;align-items:center;justify-content:space-between;gap:14px;overflow:hidden;margin:0 0 18px;padding:20px 22px;border:1px solid #174f8c;border-radius:22px;background:linear-gradient(115deg,#071d3b,#0b4d94 75%,#0b67bd);color:#fff;box-shadow:0 10px 25px #092d591b}
+.ec-welcome-strip>div:first-child{position:relative;z-index:1}.ec-welcome-strip .ec-kicker{color:#f7d56b;font-size:10px;letter-spacing:2px;font-weight:850}.ec-welcome-strip strong{display:block;margin-top:6px;font-size:18px;line-height:1.3}.ec-welcome-strip span:not(.ec-kicker){display:block;margin-top:5px;color:#d5e7fa;font-size:12px;line-height:1.5}
+.ec-welcome-orb{display:grid;flex:none;width:62px;height:62px;place-items:center;border:1px solid #ffffff40;border-radius:22px;background:linear-gradient(145deg,#ffe69a,#f4c542);color:#092b55;font-size:31px;font-weight:950;box-shadow:0 0 0 12px #ffffff0d,0 0 0 25px #ffffff08}
+.card{border:1px solid var(--ec-border);border-radius:19px;background:#fff;padding:16px;box-shadow:0 6px 20px #193a610c}
+input,select,textarea{min-height:46px;border:1px solid #dce5f0;border-radius:13px;background:#fbfdff;color:#15253b;padding:12px 14px;font-size:15px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:#4388cf;box-shadow:0 0 0 3px #0b5bd31a}
+button{min-height:44px;border-radius:13px;background:linear-gradient(135deg,#0753a1,#0b68c0);font-size:14px;font-weight:750;box-shadow:0 4px 10px #0753a11c;transition:transform .12s,filter .12s}
+button:active{transform:scale(.985);filter:brightness(.97)}button.g{background:linear-gradient(135deg,#16845b,#20a875)}button.r{background:linear-gradient(135deg,#c83e4b,#e0525d)}button.x{border:1px solid #dfe8f2;background:#edf3fa;color:#24415f;box-shadow:none}
+.tg-chat-head{margin:-20px -18px 0;padding:18px 18px 14px;border-bottom:1px solid var(--ec-border);background:#fff}
+.tg-chat-title h2{color:#14243a;font-size:25px;letter-spacing:-.5px}.tg-kicker{color:#0b5bd3}.tg-search{border:1px solid #e6edf6;border-radius:14px;background:#f3f7fc}.tg-chat-list{margin:0 -18px;padding:4px 14px 18px;background:#fff}.tg-chat-row{min-height:76px;padding:13px 5px;border-color:#edf1f6}.tg-avatar-wrap .av.sm{width:50px;height:50px;border-radius:17px}.tg-chat-line b{color:#172b45;font-size:14px}.tg-preview{max-width:100%;color:#718096}.tg-time{color:#0b5bd3}
+.nav.ec-bottom-nav{position:fixed;bottom:0;left:50%;z-index:90;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));width:100%;max-width:1120px;min-height:68px;transform:translateX(-50%);padding:7px 8px calc(7px + env(safe-area-inset-bottom));border-top:1px solid #e5ebf3;background:#ffffffed;box-shadow:0 -8px 26px #12345a12;backdrop-filter:blur(16px)}
+.ec-bottom-nav>div{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0;padding:4px 1px;color:#8794a7;font-size:10px;font-weight:700;line-height:1.2;cursor:pointer}.ec-bottom-nav>div.on{color:#0754a2}.ec-nav-icon{font-size:20px;line-height:1.1}.ec-nav-label{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ec-bottom-nav .dot{top:1px;left:calc(50% + 7px)}
+.ec-menu{top:68px;right:14px;width:min(260px,82vw);border:1px solid #e3ebf5;border-radius:17px;background:#fff;box-shadow:0 15px 38px #09274724}.ec-menu button{min-height:46px;margin:3px 0;border-radius:11px;background:transparent;color:#183958;box-shadow:none;text-align:left}
+.chatv{background:#eef3f9}.chatv .top{background:linear-gradient(110deg,#071d3b,#0b5bd3)}.b{border:1px solid #e8edf4;border-radius:15px;box-shadow:0 2px 8px #142b460b}.mr.me .b{border-color:#cfe2fb;background:#e6f1ff}.comp{border-top:1px solid #e4ebf4;background:#fff}.comp input{background:#f7f9fc}
+:where(button,a,input,select,textarea,[role="button"],[tabindex]):focus-visible{outline:3px solid #f4c542;outline-offset:3px}
+@media(min-width:700px){body{padding:0 20px}#app{border-right:1px solid #e8eef6;border-left:1px solid #e8eef6;box-shadow:0 0 40px #12345a0d}.pg{padding:24px 28px 110px}.tg-chat-head{margin:-24px -28px 0;padding:22px 28px 16px}.tg-chat-list{margin:0 -28px;padding:8px 22px 20px}.ec-welcome-strip{padding:25px 28px}.ec-welcome-strip strong{font-size:21px}}
+@media(max-width:420px){.top.ec-appbar{min-height:64px;padding:9px 13px}.ec-brand-mark{width:38px;height:38px}.ec-brand b{font-size:15px}.ec-appbar-title{display:none}.pg{padding:14px 12px calc(96px + env(safe-area-inset-bottom) + var(--adh,0px))}.tg-chat-head{margin:-14px -12px 0;padding:15px 12px 12px}.tg-chat-list{margin:0 -12px;padding:3px 10px 14px}.ec-welcome-strip{padding:17px;border-radius:18px}.ec-welcome-strip strong{font-size:16px}.ec-welcome-orb{width:48px;height:48px;border-radius:17px;font-size:24px}.nav.ec-bottom-nav{min-height:64px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
 </style>
 </head>
 <body>
@@ -624,9 +657,11 @@ function mainView() {
   var b = S.tab === 'chats' ? chatsTab() : S.tab === 'contacts' ? contactsTab() : S.tab === 'groups' ? groupsTab() : S.tab === 'profile' ? profileTab() : S.tab === 'wallet' ? walletTab() : S.tab === 'calls' ? callsTab() : settingsTab();
   var unread = S.chats.reduce(function (a, c) { return a + (c.unread || 0); }, 0);
   var gunread = S.groups.reduce(function (a, g) { return a + (g.unread || 0); }, 0);
-  var items = [['chats','💬'],['contacts','👤'],['groups','👥'],['profile','👤']];
-  var menu = S.menuOpen ? '<div class="ec-menu"><button onclick="go(\'wallet\');S.menuOpen=false">🪙 Wallet</button><button onclick="go(\'settings\');S.menuOpen=false">⚙️ Settings</button><button onclick="go(\'calls\');S.menuOpen=false">📞 Calls</button><button onclick="go(\'profile\');S.menuOpen=false">👤 My profile</button></div>' : '';
-  return (S.online ? '' : '<div class="ban">'+t('offline')+'</div>') + '<div class="top">'+(S.tab!=='chats'&&S.tab!=='contacts'&&S.tab!=='groups'&&S.tab!=='profile'?'<button class="ec-menu-btn" onclick="go(\'chats\')" aria-label="Back">←</button>':'<span></span>')+'<span>Ethio Call</span><button class="ec-menu-btn" onclick="S.menuOpen=!S.menuOpen;render()" aria-label="Open menu">☰</button></div>'+menu+'<div class="pg">'+b+'</div><div class="nav">'+items.map(function(i){return '<div class="'+(S.tab===i[0]?'on':'')+'" onclick="go(\''+i[0]+'\')">'+i[1]+(i[0]==='chats'&&unread?'<span class="dot">'+unread+'</span>':'')+(i[0]==='groups'&&gunread?'<span class="dot">'+gunread+'</span>':'')+'<br>'+(i[0]==='profile'?'Profile':t(i[0]))+'</div>';}).join('')+'</div>';
+  var items = [['chats','💬'],['calls','📞'],['groups','👥'],['wallet','🪙'],['settings','⚙️']];
+  var menu = S.menuOpen ? '<div class="ec-menu"><button onclick="go(\'contacts\');S.menuOpen=false">👥 Contacts</button><button onclick="go(\'profile\');S.menuOpen=false">👤 My profile</button><button onclick="go(\'settings\');S.menuOpen=false">⚙️ Settings & privacy</button></div>' : '';
+  var title = S.tab === 'chats' ? 'Chats' : S.tab === 'calls' ? t('calls') : S.tab === 'groups' ? t('groups') : S.tab === 'wallet' ? t('wallet') : S.tab === 'profile' ? t('profile') : S.tab === 'contacts' ? t('contacts') : t('settings');
+  var hello = S.tab === 'chats' ? '<div class="ec-welcome-strip"><div><div class="ec-kicker">ETHIO CALL</div><strong>Wal qunnamtii salphaa, saffisaa.</strong><span>Maatii fi hiriyoota kee waliin yeroo hunda walitti dhiyaadhu.</span></div><div class="ec-welcome-orb">E</div></div>' : '';
+  return (S.online ? '' : '<div class="ban">'+t('offline')+'</div>') + '<div class="top ec-appbar"><span class="ec-brand"><span class="ec-brand-mark">E</span><span><b>Ethio Call</b><small>Connect beyond distance</small></span></span><span class="ec-appbar-title">'+esc(title)+'</span><button class="ec-menu-btn" onclick="S.menuOpen=!S.menuOpen;render()" aria-label="Open menu">☰</button></div>'+menu+'<div class="pg">'+hello+b+'</div><div class="nav ec-bottom-nav">'+items.map(function(i){return '<div class="'+(S.tab===i[0]?'on':'')+'" onclick="go(\''+i[0]+'\')"><span class="ec-nav-icon">'+i[1]+'</span>'+(i[0]==='chats'&&unread?'<span class="dot">'+unread+'</span>':'')+(i[0]==='groups'&&gunread?'<span class="dot">'+gunread+'</span>':'')+'<span class="ec-nav-label">'+(i[0]==='settings'?t('settings'):i[0]==='wallet'?t('wallet'):i[0]==='calls'?t('calls'):i[0]==='groups'?t('groups'):t('chats'))+'</span></div>';}).join('')+'</div>';
 }
 /* ---------- chat screen ---------- */
 function fmtDur(s) { s = Math.round(s || 0); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
