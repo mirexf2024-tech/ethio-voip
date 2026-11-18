@@ -94,6 +94,16 @@ button{background:linear-gradient(120deg,var(--teal),#0b9b9a);color:#fff;border:
   <div class="s">Adsterra does not allow rewarding people for seeing or tapping its ads. Keep the Adsterra banner as a normal banner and never say "tap the ad". Watch and earn is for Start.io videos in the Android app only.</div>
 </div>
 
+
+<div class="card" id="adsterraReport">
+  <b>Adsterra live report</b>
+  <div class="s">Read-only report from Adsterra Publisher API · last 7 days</div>
+  <button class="x" onclick="loadAdsterra()">Refresh Adsterra report</button>
+  <div id="adsterraStatus" class="s">Open the admin panel to check the connection.</div>
+  <div id="adsterraStats" class="grid"></div>
+  <pre id="adsterraRaw" class="s" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto"></pre>
+</div>
+
 <div class="card" id="reports">
 <b>Safety reports · Moderation queue</b>
   <select id="reportStatus" onchange="loadReports()">
@@ -134,7 +144,7 @@ async function call(path, method, body) {
 
 function lockAdmin() { KEY = ''; sessionStorage.removeItem('ak'); location.reload(); }
 function saveKey() { KEY = $('key').value.trim(); $('key').value = ''; if (!KEY) return say('Enter your admin key first.'); sessionStorage.setItem('ak', KEY); loadAll(); }
-function loadAll() { loadStats(); loadReqs(); loadUsers(); loadPackages(); loadAds(); loadHealth(); loadReports(); }
+function loadAll() { loadStats(); loadReqs(); loadUsers(); loadPackages(); loadAds(); loadHealth(); loadReports(); loadAdsterra(); }
 
 async function loadStats() {
   if (!KEY) return;
@@ -259,6 +269,34 @@ async function loadPackages() {
 async function savePkg(id) {
   var r = await call('/admin/package', 'POST', {id: id, name: $('pn' + id).value, coins: $('pc' + id).value, price_etb: $('pp' + id).value});
   say(r.ok ? 'Saved' : (r.error || 'Error'));
+}
+
+
+async function loadAdsterra() {
+  if (!KEY) return;
+  $('adsterraStatus').textContent = 'Connecting to Adsterra…';
+  $('adsterraStats').innerHTML = '';
+  $('adsterraRaw').textContent = '';
+  var r = await call('/admin/adsterra');
+  if (!r || !r.ok) {
+    $('adsterraStatus').textContent = (r && r.error) || 'Adsterra report unavailable.';
+    return;
+  }
+  $('adsterraStatus').textContent = 'Connected · ' + r.start_date + ' to ' + r.finish_date + '. Figures below are returned by Adsterra.';
+  var raw = r.stats;
+  var rows = Array.isArray(raw) ? raw : (raw && (raw.items || raw.data || raw.stats)) || [];
+  var sum = { impressions: 0, clicks: 0, revenue: 0 };
+  rows.forEach(function (x) {
+    sum.impressions += Number(x.impressions || x.views || 0);
+    sum.clicks += Number(x.clicks || 0);
+    sum.revenue += Number(x.revenue || x.earnings || 0);
+  });
+  var box = function (v, label) { return '<div class="stat"><b>' + esc(v) + '</b><span class="s">' + esc(label) + '</span></div>'; };
+  $('adsterraStats').innerHTML = box(sum.impressions.toLocaleString(), 'Impressions (returned rows)') +
+    box(sum.clicks.toLocaleString(), 'Clicks (returned rows)') +
+    box(sum.revenue.toFixed(4), 'Revenue (returned rows)');
+  $('adsterraRaw').textContent = 'Domains: ' + JSON.stringify(r.domains, null, 2) +
+    '\\n\\nStatistics: ' + JSON.stringify(r.stats, null, 2);
 }
 
 async function loadAds() {
