@@ -143,6 +143,14 @@ function toast(m, ms) {
   setTimeout(function () { if (S.msg === m) { S.msg = ''; render(); } }, ms || 3500);
 }
 function go(tab) { S.menuOpen = false; S.tab = tab; if (tab === 'groups') loadGroups(); render(); }
+function handleAppBack() {
+  if (S.menuOpen) { S.menuOpen = false; render(); return true; }
+  if (S.grp) { if (S.grp.info) { S.grp.info = false; render(); } else closeGroup(); return true; }
+  if (S.chat) { closeChat(); return true; }
+  if (S.call) return true;
+  if (S.tab !== 'chats') { go('chats'); return true; }
+  return false;
+}
 function setLang(l) { S.lang = l; localStorage.setItem('lg', l); render(); }
 function tog(k) { S.set[k] = !S.set[k]; try { localStorage.setItem('st', JSON.stringify(S.set)); } catch (e) {} render(); }
 
@@ -571,7 +579,7 @@ function mainView() {
   var gunread = S.groups.reduce(function (a, g) { return a + (g.unread || 0); }, 0);
   var items = [['chats','💬'],['contacts','👤'],['groups','👥'],['profile','👤']];
   var menu = S.menuOpen ? '<div class="ec-menu"><button onclick="go(\'wallet\');S.menuOpen=false">🪙 Wallet</button><button onclick="go(\'settings\');S.menuOpen=false">⚙️ Settings</button><button onclick="go(\'calls\');S.menuOpen=false">📞 Calls</button><button onclick="go(\'profile\');S.menuOpen=false">👤 My profile</button></div>' : '';
-  return (S.online ? '' : '<div class="ban">'+t('offline')+'</div>') + '<div class="top"><span>Ethio Call</span><button class="ec-menu-btn" onclick="S.menuOpen=!S.menuOpen;render()" aria-label="Open menu">☰</button></div>'+menu+'<div class="pg">'+b+'</div><div class="nav">'+items.map(function(i){return '<div class="'+(S.tab===i[0]?'on':'')+'" onclick="go(\''+i[0]+'\')">'+i[1]+(i[0]==='chats'&&unread?'<span class="dot">'+unread+'</span>':'')+(i[0]==='groups'&&gunread?'<span class="dot">'+gunread+'</span>':'')+'<br>'+(i[0]==='profile'?'Profile':t(i[0]))+'</div>';}).join('')+'</div>';
+  return (S.online ? '' : '<div class="ban">'+t('offline')+'</div>') + '<div class="top">'+(S.tab!=='chats'&&S.tab!=='contacts'&&S.tab!=='groups'&&S.tab!=='profile'?'<button class="ec-menu-btn" onclick="go(\'chats\')" aria-label="Back">←</button>':'<span></span>')+'<span>Ethio Call</span><button class="ec-menu-btn" onclick="S.menuOpen=!S.menuOpen;render()" aria-label="Open menu">☰</button></div>'+menu+'<div class="pg">'+b+'</div><div class="nav">'+items.map(function(i){return '<div class="'+(S.tab===i[0]?'on':'')+'" onclick="go(\''+i[0]+'\')">'+i[1]+(i[0]==='chats'&&unread?'<span class="dot">'+unread+'</span>':'')+(i[0]==='groups'&&gunread?'<span class="dot">'+gunread+'</span>':'')+'<br>'+(i[0]==='profile'?'Profile':t(i[0]))+'</div>';}).join('')+'</div>';
 }
 /* ---------- chat screen ---------- */
 function fmtDur(s) { s = Math.round(s || 0); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
@@ -1382,6 +1390,19 @@ function connect() {
   });
 }
 
+/* ---------- app back navigation ---------- */
+try {
+  history.pushState({ethioCall:true}, '', location.href);
+  window.addEventListener('popstate', function () {
+    if (handleAppBack()) history.pushState({ethioCall:true}, '', location.href);
+  });
+  var appBackPlugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+  if (appBackPlugin && appBackPlugin.addListener) {
+    appBackPlugin.addListener('backButton', function () {
+      if (!handleAppBack() && appBackPlugin.exitApp) appBackPlugin.exitApp();
+    });
+  }
+} catch (backError) {}
 /* ---------- start ---------- */
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(function () {});
 fetch('/health').then(function (r) { return r.json(); }).then(function (j) {
