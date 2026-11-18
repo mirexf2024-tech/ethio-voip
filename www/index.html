@@ -489,13 +489,13 @@ function langSel() {
 }
 
 function finishWelcome() {
-  try { localStorage.setItem('ec_welcome_seen', '1'); } catch (e) {}
+  try { localStorage.setItem('ec_welcome_seen_v2', '1'); } catch (e) {}
   render();
 }
 
 function loginView() {
   var m = S.meth;
-  if (IS_NATIVE_APP && localStorage.getItem('ec_welcome_seen') !== '1') {
+  if (IS_NATIVE_APP && localStorage.getItem('ec_welcome_seen_v2') !== '1') {
     var copy = S.lang === 'om'
       ? {tag:'Stay Connected', lead:'Firoottan kee fi hiriyoota kee waliin wal qunnami.', start:'Seensa', login:'Login', privacy:'Imaammata Dhuunfaa'}
       : S.lang === 'am'
