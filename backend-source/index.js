@@ -492,7 +492,7 @@ app.post('/wallet/dev-buy', auth, async (req, res) => {
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: ['https://ethio-voip.onrender.com','https://mirexf2024-tech.github.io'], methods: ['GET','POST'] },
+  cors: { origin: ['https://ethio-voip.onrender.com','https://mirexf2024-tech.github.io','capacitor://localhost','ionic://localhost','http://localhost'], methods: ['GET','POST'] },
   maxHttpBufferSize: 1e6,
   connectTimeout: 20000,
   pingTimeout: 20000,
