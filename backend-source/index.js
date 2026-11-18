@@ -152,6 +152,8 @@ const iconRoute = (size) => (_, res) => {
 
 // ---- the app itself (PWA) ----
 app.get('/', (_, res) => res.sendFile(path.join(__dirname, 'app.html')));
+app.get('/docs/privacy-policy.html', (_, res) => res.sendFile(path.join(__dirname, 'docs', 'privacy-policy.html')));
+app.get('/docs/terms.html', (_, res) => res.sendFile(path.join(__dirname, 'docs', 'terms.html')));
 app.get('/icon-192.png', iconRoute(192));
 app.get('/icon-512.png', iconRoute(512));
 app.get('/manifest.json', (_, res) =>
