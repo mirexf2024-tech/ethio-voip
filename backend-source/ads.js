@@ -9,7 +9,9 @@
 //    In the normal browser/PWA the button stays hidden.
 //  - The server checks every reward: one open video at a time, a minimum watch time, a gap between
 //    rewards and a daily limit. Numbers can be changed on Render (Environment).
-const REWARD_COINS = parseInt(process.env.REWARD_COINS || '0', 10);          // coins for one video (0 = off)
+const REWARD_COINS = parseInt(process.env.REWARD_COINS || '0', 10);
+// No ad-network server-side verification callback is integrated yet. Keep rewards hard-disabled.
+const REWARD_PROVIDER_READY = false;          // coins for one video (0 = off)
 const REWARD_DAILY_MAX = parseInt(process.env.REWARD_DAILY_MAX || '10', 10); // videos per person per day
 const REWARD_MIN_SECONDS = parseInt(process.env.REWARD_MIN_SECONDS || '15', 10); // shortest real watch time
 const REWARD_GAP_SECONDS = parseInt(process.env.REWARD_GAP_SECONDS || '30', 10); // wait between two rewards
@@ -74,7 +76,7 @@ function setupAds(app, { pool, auth, changeCoins, adminOk }) {
         banner: s.ads_on ? s.banner : '',
         height: s.height,
         reward: {
-          on: REWARD_COINS > 0 && s.reward_on,
+          on: REWARD_PROVIDER_READY && REWARD_COINS > 0 && s.reward_on,
           coins: REWARD_COINS,
           left,
           min_seconds: REWARD_MIN_SECONDS,
@@ -90,7 +92,7 @@ function setupAds(app, { pool, auth, changeCoins, adminOk }) {
   app.post('/ads/reward/start', auth, async (req, res) => {
     try {
       const s = await settings();
-      if (!(REWARD_COINS > 0 && s.reward_on)) return res.status(404).json({ error: 'Not available' });
+      if (!(REWARD_PROVIDER_READY && REWARD_COINS > 0 && s.reward_on)) return res.status(404).json({ error: 'Rewarded ads are not configured yet' });
       const u = await usedToday(req.user.id);
       if (u.n >= REWARD_DAILY_MAX) return res.status(429).json({ error: 'Come back tomorrow for more videos' });
       if (u.last && Date.now() - new Date(u.last).getTime() < REWARD_GAP_SECONDS * 1000)
@@ -112,6 +114,7 @@ function setupAds(app, { pool, auth, changeCoins, adminOk }) {
   // ---- step 2: the video finished; the server decides if the reward is fair ----
   app.post('/ads/reward/claim', auth, async (req, res) => {
     try {
+      if (!REWARD_PROVIDER_READY || !(REWARD_COINS > 0)) return res.status(404).json({ error: 'Rewarded ads are not configured yet' });
       const id = parseInt(req.body && req.body.id, 10);
       if (!id) return res.status(400).json({ error: 'Bad id' });
       const c = await pool.query(
