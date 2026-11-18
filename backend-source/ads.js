@@ -177,6 +177,47 @@ function setupAds(app, { pool, auth, changeCoins, adminOk }) {
     }
   });
 
+  // ---- Adsterra Publisher API: read-only reporting (never exposes the API key) ----
+  app.get('/admin/adsterra', async (req, res) => {
+    if (!adminOk(req, res)) return;
+    const apiKey = process.env.ADSTERRA_API_KEY;
+    if (!apiKey) return res.status(503).json({ error: 'Adsterra API key is not configured on the server.' });
+    try {
+      const day = (d) => new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Africa/Addis_Ababa', year: 'numeric', month: '2-digit', day: '2-digit'
+      }).format(d);
+      const finish = day(new Date());
+      const start = day(new Date(Date.now() - 6 * 86400000));
+      const headers = { Accept: 'application/json', 'X-API-Key': apiKey };
+      const base = 'https://api3.adsterratools.com/publisher';
+      const getJson = async (url) => {
+        const response = await fetch(url, { method: 'GET', headers, signal: AbortSignal.timeout(12000) });
+        if (!response.ok) {
+          const err = new Error('Adsterra returned HTTP ' + response.status);
+          err.status = response.status;
+          throw err;
+        }
+        return response.json();
+      };
+      const [domains, stats] = await Promise.all([
+        getJson(base + '/domains.json'),
+        getJson(base + '/stats.json?' + new URLSearchParams({
+          start_date: start, finish_date: finish, group_by: 'date'
+        }))
+      ]);
+      res.set('Cache-Control', 'no-store');
+      res.json({ ok: true, start_date: start, finish_date: finish, domains, stats });
+    } catch (e) {
+      console.error('Adsterra reporting request failed:', e.message);
+      const status = e.status === 401 || e.status === 403 ? 502 : 502;
+      res.status(status).json({
+        error: e.name === 'TimeoutError' ? 'Adsterra API timed out. Try again shortly.' :
+          e.status === 401 || e.status === 403 ? 'Adsterra rejected the API key. Check that it is a Publisher API token.' :
+          'Could not retrieve Adsterra reports. Check the API account and try again.'
+      });
+    }
+  });
+
   return { init };
 }
 
