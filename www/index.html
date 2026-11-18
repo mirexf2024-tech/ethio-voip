@@ -600,7 +600,8 @@ function chatsTab() {
   <label class="tg-search">⌕ <input id="chatSearch" type="search" placeholder="${label}" value="${esc(S.d_cq||'')}" oninput="S.d_cq=this.value;var p=this.selectionStart;render();var n=document.getElementById('chatSearch');if(n){n.focus();n.setSelectionRange(p,p)}"></label></section>
   <section class="tg-chat-list">${list.map(function(c){var online=S.presence[c.id]!==undefined?S.presence[c.id]:!!c.online;return `<div class="tg-chat-row" onclick="openChat('${esc(c.phone)}')"><div class="tg-avatar-wrap">${avatar(c.avatar_url,(c.name||'#')[0].toUpperCase(),'sm')}${online?'<i class="tg-online"></i>':''}</div><div class="tg-chat-copy"><div class="tg-chat-line"><b>${esc(c.name||c.phone)}</b><span class="tg-time">${c.unread?'NEW':''}</span></div><div class="tg-chat-line"><span class="tg-preview">${preview(c)}</span>${c.unread?`<span class="badge">${c.unread}</span>`:''}</div></div></div>`;}).join('')||`<div class="tg-empty"><div class="tg-empty-icon">💬</div><b>${q?t('noMatch'):empty}</b></div>`}</section>`;
 }
-\nfunction contactsTab() {
+
+function contactsTab() {
   var q = String(S.d_contactSearch || '').toLowerCase();
   var list = S.phoneContacts || [];
   var rows = list.filter(function(c){return !q || [c.name,c.phone].some(function(v){return String(v||'').toLowerCase().indexOf(q)!==-1;});});
