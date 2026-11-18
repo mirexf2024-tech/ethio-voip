@@ -25,12 +25,13 @@ function setupPush(app, { pool, auth }) {
     // FCM remains optional until the Firebase service-account JSON is added to Render.
     if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
       try {
-        const admin = require('firebase-admin');
-        if (!admin.apps.length) {
+        const { initializeApp, cert, getApps } = require('firebase-admin/app');
+        const { getMessaging } = require('firebase-admin/messaging');
+        if (!getApps().length) {
           const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
-          admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+          initializeApp({ credential: cert(serviceAccount) });
         }
-        firebaseMessaging = admin.messaging();
+        firebaseMessaging = getMessaging();
         console.log('Firebase Cloud Messaging ready');
       } catch (e) {
         console.error('FCM configuration invalid:', e.message);
