@@ -6,7 +6,7 @@
     "start": "node index.js"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=24.0.0 <25.0.0"
   },
   "dependencies": {
     "cors": "^2.8.5",
