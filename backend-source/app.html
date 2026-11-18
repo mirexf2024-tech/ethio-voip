@@ -119,7 +119,7 @@ function toast(m, ms) {
   S.msg = m; render();
   setTimeout(function () { if (S.msg === m) { S.msg = ''; render(); } }, ms || 3500);
 }
-function go(tab) { S.tab = tab; if (tab === 'groups') loadGroups(); render(); }
+function go(tab) { S.menuOpen = false; S.tab = tab; if (tab === 'groups') loadGroups(); render(); }
 function setLang(l) { S.lang = l; localStorage.setItem('lg', l); render(); }
 function tog(k) { S.set[k] = !S.set[k]; try { localStorage.setItem('st', JSON.stringify(S.set)); } catch (e) {} render(); }
 
