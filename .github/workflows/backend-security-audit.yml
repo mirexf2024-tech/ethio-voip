@@ -1,0 +1,35 @@
+name: Backend dependency security audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend-source/package.json"
+      - "backend-source/package-lock.json"
+      - ".github/workflows/backend-security-audit.yml"
+  pull_request:
+    paths:
+      - "backend-source/package.json"
+      - "backend-source/package-lock.json"
+  schedule:
+    - cron: "23 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend-source
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Resolve and audit production dependency tree
+        run: |
+          npm install --package-lock-only --ignore-scripts
+          npm audit --omit=dev --audit-level=moderate
