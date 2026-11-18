@@ -28,7 +28,7 @@ button{background:linear-gradient(120deg,var(--teal),#0b9b9a);color:#fff;border:
 </head>
 <body>
 <header class="top"><div class="brand"><div class="logo">E</div><div><h1>Ethio Call Control Center</h1><p>Manage your platform, people and services</p></div></div><div class="secure">● PRIVATE ADMIN AREA</div><button class="lock" type="button" onclick="lockAdmin()">Lock panel</button></header>
-<nav aria-label="Admin sections"><a href="#overview">Overview</a><a href="#system">System</a><a href="#payments">Payments</a><a href="#people">People</a><a href="#walletTools">Coins</a><a href="#notifications">Notices</a><a href="#ads">Ads</a><a href="#packages">Packages</a></nav>
+<nav aria-label="Admin sections"><a href="#overview">Overview</a><a href="#system">System</a><a href="#payments">Payments</a><a href="#people">People</a><a href="#walletTools">Coins</a><a href="#notifications">Notices</a><a href="#ads">Ads</a><a href="#packages">Packages</a><a href="#reports">Reports</a></nav>
 
 <div class="card" id="accessPanel">
 <input id="key" type="password" placeholder="Admin key" autocomplete="off">
@@ -94,6 +94,19 @@ button{background:linear-gradient(120deg,var(--teal),#0b9b9a);color:#fff;border:
   <div class="s">Adsterra does not allow rewarding people for seeing or tapping its ads. Keep the Adsterra banner as a normal banner and never say "tap the ad". Watch and earn is for Start.io videos in the Android app only.</div>
 </div>
 
+<div class="card" id="reports">
+<b>Safety reports · Moderation queue</b>
+  <select id="reportStatus" onchange="loadReports()">
+    <option value="pending">Waiting for review</option>
+    <option value="reviewed">Reviewed</option>
+    <option value="actioned">Action taken</option>
+    <option value="dismissed">Dismissed</option>
+  </select>
+  <button class="x" onclick="loadReports()">Refresh reports</button>
+  <div id="reportsList"><div class="s">Open the admin panel to load reports.</div></div>
+  <div class="s">Review reports fairly. Use the People section to suspend an account only when evidence supports action. Reports are private to administrators.</div>
+</div>
+
 <div class="card" id="packages">
 <b>Packages and prices</b>
   <div id="pk"></div>
@@ -121,7 +134,7 @@ async function call(path, method, body) {
 
 function lockAdmin() { KEY = ''; sessionStorage.removeItem('ak'); location.reload(); }
 function saveKey() { KEY = $('key').value.trim(); $('key').value = ''; if (!KEY) return say('Enter your admin key first.'); sessionStorage.setItem('ak', KEY); loadAll(); }
-function loadAll() { loadStats(); loadReqs(); loadUsers(); loadPackages(); loadAds(); loadHealth(); }
+function loadAll() { loadStats(); loadReqs(); loadUsers(); loadPackages(); loadAds(); loadHealth(); loadReports(); }
 
 async function loadStats() {
   if (!KEY) return;
@@ -201,6 +214,31 @@ async function broadcast() {
   if (!confirm('Send this notice to everyone?')) return;
   var r = await call('/admin/broadcast', 'POST', {title: $('nt').value, body: $('nb').value});
   say(r.ok ? 'Sent to ' + r.sent_to + ' people' : (r.error || 'Error'));
+}
+
+async function loadReports() {
+  if (!KEY) return;
+  var r = await call('/admin/reports?status=' + encodeURIComponent($('reportStatus').value));
+  if (!Array.isArray(r)) { $('reportsList').innerHTML = ''; return say(r.error || 'Could not load reports'); }
+  $('reportsList').innerHTML = r.map(function (p) {
+    var actions = p.status === 'pending'
+      ? '<div class="row"><button class="g" onclick="decideReport(' + p.id + ',\'actioned\')">Action taken</button>' +
+        '<button class="x" onclick="decideReport(' + p.id + ',\'reviewed\')">Mark reviewed</button>' +
+        '<button class="r" onclick="decideReport(' + p.id + ',\'dismissed\')">Dismiss</button></div>' : '';
+    return '<div class="item"><b>#' + esc(p.id) + ' · ' + esc(p.reason) + '</b> <span class="tag">' + esc(p.status) + '</span>' +
+      '<div class="s">Reported account: ' + esc(p.target_name || p.target_phone) + ' (' + esc(p.target_phone) + ')' +
+      '<br>Reported by: ' + esc(p.reporter_phone) + '<br>' + new Date(p.created_at).toLocaleString() +
+      (p.details ? '<br>Details: ' + esc(p.details) : '') +
+      (p.message_excerpt ? '<br>Message: ' + esc(p.message_excerpt) : '') +
+      (p.admin_note ? '<br>Admin note: ' + esc(p.admin_note) : '') + '</div>' + actions + '</div>';
+  }).join('') || '<div class="s">No reports in this status.</div>';
+}
+async function decideReport(id, status) {
+  var note = prompt('Optional moderation note:') || '';
+  if (status === 'actioned' && !confirm('Confirm that appropriate action has been taken?')) return;
+  var r = await call('/admin/report/decision', 'POST', {id:id, status:status, note:note});
+  say(r.ok ? 'Report updated' : (r.error || 'Could not update report'));
+  loadReports();
 }
 
 async function loadPackages() {
