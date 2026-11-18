@@ -257,6 +257,49 @@ function setupPayments(app, io, { pool, auth, changeCoins, normalizePhone, push 
     }
   });
 
+  // ---------- abuse report moderation queue ----------
+  app.get('/admin/reports', async (req, res) => {
+    if (!adminOk(req, res)) return;
+    try {
+      const status = ['pending', 'reviewed', 'actioned', 'dismissed'].includes(req.query.status) ? req.query.status : 'pending';
+      const r = await pool.query(
+        `select ar.id, ar.reason, ar.details, ar.status, ar.admin_note, ar.created_at, ar.reviewed_at,
+                reporter.phone as reporter_phone, target.phone as target_phone, target.name as target_name,
+                ar.message_id, left(m.body, 240) as message_excerpt
+         from abuse_reports ar
+         join users reporter on reporter.id=ar.reporter_id
+         join users target on target.id=ar.target_id
+         left join messages m on m.id=ar.message_id
+         where ar.status=$1 order by ar.created_at desc limit 100`,
+        [status]
+      );
+      res.json(r.rows);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+
+  app.post('/admin/report/decision', async (req, res) => {
+    if (!adminOk(req, res)) return;
+    try {
+      const id = parseInt(req.body && req.body.id, 10);
+      const status = String(req.body && req.body.status || '');
+      const note = String(req.body && req.body.note || '').trim().slice(0, 500);
+      if (!id || !['reviewed', 'actioned', 'dismissed'].includes(status))
+        return res.status(400).json({ error: 'Choose a valid report decision' });
+      const r = await pool.query(
+        "update abuse_reports set status=$2, admin_note=$3, reviewed_at=now() where id=$1 and status='pending' returning id",
+        [id, status, note || null]
+      );
+      if (!r.rowCount) return res.status(409).json({ error: 'Report already reviewed or not found' });
+      res.json({ ok: true });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+
   app.get('/admin/packages', async (req, res) => {
     if (!adminOk(req, res)) return;
     res.json((await pool.query('select id, name, coins, price_etb from packages order by id')).rows);
