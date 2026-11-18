@@ -890,9 +890,11 @@ async function doLogin() {
 }
 
 async function logout() {
-  await pushOff();
+  // Never let push/service-worker cleanup block the authentication screen.
+  // Start best-effort cleanup, then clear the session and render immediately.
+  try { Promise.resolve(pushOff()).catch(function () {}); } catch (e) {}
   localStorage.removeItem('tk');
-  if (socket) socket.close();
+  if (socket) { try { socket.close(); } catch (e) {} }
   S.token = null; S.me = null; S.otpSent = false; S.loading = false; S.online = false;
   S.chat = null; S.chats = []; S.blocks = []; S.call = null;
   S.grp = null; S.groups = []; S.ads = null; adShown = ''; try { $('adf').srcdoc = ''; } catch (e) {}
