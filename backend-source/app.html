@@ -120,6 +120,12 @@ button.g{background:linear-gradient(135deg,#16845b,#20a875)}button.r{background:
 /* Welcome and support polish */
 .ec-welcome{position:relative;overflow:hidden;min-height:245px;padding:28px 23px 25px;background:linear-gradient(135deg,#062b59,#0754a2 65%,#1378c7);color:#fff}
 .ec-welcome-copy{position:relative;z-index:2;max-width:310px}.ec-welcome-mark{width:54px;height:54px;border-radius:18px;background:linear-gradient(145deg,#ffe28a,#f4bd32);display:grid;place-items:center;color:#073b78;font-size:30px;font-weight:900;box-shadow:0 8px 24px #001d443d;margin-bottom:18px}.ec-welcome-mark span{font-size:13px;position:absolute;margin:0 0 30px 30px}.ec-kicker{font-size:11px;letter-spacing:2px;font-weight:800;color:#f9d76c}.ec-welcome h1{font-size:27px;line-height:1.15;margin:7px 0 9px;letter-spacing:-.6px}.ec-welcome p{font-size:14px;line-height:1.55;color:#e0edfb;margin:0 0 13px}.ec-feature-line{font-size:12px;font-weight:700;color:#ffdf78}.ec-orbit{position:absolute;border:1px solid #ffffff27;border-radius:50%;pointer-events:none}.ec-orbit-a{width:210px;height:210px;right:-75px;top:15px;box-shadow:0 0 0 24px #ffffff08,0 0 0 50px #ffffff06}.ec-orbit-b{width:100px;height:100px;right:20px;bottom:-54px;background:#ffffff08}.ec-login-card{margin-top:-8px;position:relative;z-index:3}.ec-login-title{font-weight:800;color:#173553;margin:13px 0 4px}.ec-login-foot{font-size:12px;color:#75869a;text-align:center;padding:12px 4px 2px}.ec-setting-link{display:flex;align-items:center;min-height:45px;padding:10px 12px;margin:6px 0;border-radius:11px;background:#f3f7fc;color:#164b80;text-decoration:none;font-weight:650;font-size:14px;border:1px solid #e4edf7}.ec-setting-link:active{background:#e8f1fc}
+
+/* Accessibility and low-motion support */
+:where(button,a,input,select,textarea,[role="button"],[tabindex]):focus-visible{outline:3px solid #f0b928;outline-offset:3px}
+button,[role="button"]{touch-action:manipulation}
+img{max-width:100%}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 </style>
 </head>
 <body>
@@ -341,7 +347,7 @@ function loginView() {
 }
 
 function avatar(url, label, cls) {
-  return `<div class="av ${cls || ''}">${url ? `<img src="${esc(url)}">` : esc(label)}</div>`;
+  return `<div class="av ${cls || ''}">${url ? `<img src="${esc(url)}" alt="${esc(label || "Profile photo")}" loading="lazy" decoding="async">` : esc(label)}</div>`;
 }
 
 function preview(c) {
@@ -625,9 +631,9 @@ function bubble(m, g) {
   var inner = '';
   if (m.kind === 'text') inner = esc(m.body) + (m.tr ? `<div class="s" style="margin-top:4px;border-top:1px dashed #ccc;padding-top:4px">🌐 ${esc(m.tr)}</div>` : (S.meth.tr ? `<div><a href="#" class="s" onclick="trMsg(${m.id},${g ? 1 : 0});return false">🌐 ${t('translate')}</a></div>` : ''));
   else if (m.kind === 'image') {
-    inner = M[mk] ? `<img class="pic" src="${M[mk]}" onclick="window.open(M[${k}])">`
+    inner = M[mk] ? `<img class="pic" src="${M[mk]}" alt="Image attachment" loading="lazy" decoding="async" onclick="window.open(M[${k}], '_blank', 'noopener,noreferrer')">`
       : S.set.saver ? `<div class="ph" onclick="loadImg(${k})">📷 ${t('tapLoad')}</div>`
-      : `<img class="pic" data-mid="${mk}">`;
+      : `<img class="pic" data-mid="${mk}" alt="Image attachment" loading="lazy" decoding="async">`;
   } else if (m.kind === 'voice') inner = `<button class="pl" onclick="playV(${k})">▶ 🎤 ${fmtDur(m.duration)}</button>`;
   else inner = `<a href="#" onclick="dl(${k},'${safeName(m.media_name)}');return false">📎 ${esc(m.media_name || t('fileWord'))}</a>`;
   var who = g && !m.mine ? `<div class="s" style="font-weight:700;color:#0f766e">${esc(m.from_name || m.from_phone || '')}</div>` : '';
