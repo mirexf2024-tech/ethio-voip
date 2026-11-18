@@ -9,7 +9,7 @@
 //    In the normal browser/PWA the button stays hidden.
 //  - The server checks every reward: one open video at a time, a minimum watch time, a gap between
 //    rewards and a daily limit. Numbers can be changed on Render (Environment).
-const REWARD_COINS = parseInt(process.env.REWARD_COINS || '1', 10);          // coins for one video (0 = off)
+const REWARD_COINS = parseInt(process.env.REWARD_COINS || '0', 10);          // coins for one video (0 = off)
 const REWARD_DAILY_MAX = parseInt(process.env.REWARD_DAILY_MAX || '10', 10); // videos per person per day
 const REWARD_MIN_SECONDS = parseInt(process.env.REWARD_MIN_SECONDS || '15', 10); // shortest real watch time
 const REWARD_GAP_SECONDS = parseInt(process.env.REWARD_GAP_SECONDS || '30', 10); // wait between two rewards
