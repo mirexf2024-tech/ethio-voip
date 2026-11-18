@@ -229,6 +229,8 @@ button.g{background:linear-gradient(135deg,#16845b,#20a875)}button.r{background:
 @media(prefers-reduced-motion:no-preference){.card{animation:ecRise .24s ease both}@keyframes ecRise{from{opacity:.75;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}}
 
 .ec-setting-link{display:flex;align-items:center;min-height:45px;padding:10px 12px;margin:6px 0;border-radius:11px;background:#f3f7fc;color:#164b80;text-decoration:none;font-weight:650;font-size:14px;border:1px solid #e4edf7}.ec-setting-link:active{background:#e8f1fc}
+
+.ec-call-quality{display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:6px 12px;border-radius:30px;background:#ffffff18;color:#e4efff;font-size:12px;font-weight:700;letter-spacing:.2px}
 </style>
 </head>
 <body>
@@ -323,7 +325,7 @@ function ringStop() { clearInterval(ringT); ringT = null; }
 
 // ringback: what the CALLER hears while the other phone rings.
 // Put your own ringback.mp3 in the repo to replace this standard tone (1 s tone, 4 s silence).
-var rbT = null, rbOsc = null, rbAudio = null;
+var rbT = null, rbOsc = null, rbAudio = null, callStatsT = null, lastCallStats = null;
 function rbSynth() {
   if (!actx) return;
   var once = function () {
@@ -1024,9 +1026,11 @@ function clock() {
 function callView() {
   var c = S.call, inc = c.state === 'incoming', vid = !!c.video && !inc;
   var status = inc ? (c.video ? t('incomingVideo') : t('incoming')) : c.state === 'active' ? t('connected') : c.reach ? t(c.reach === 'push' ? 'wakeup' : 'ringing') : t('calling');
+  var reconnecting = c.state === 'active' && ['checking','disconnected'].includes(c.ice);
+  var netText = c.netLabel || (c.ice === 'failed' ? 'Network unavailable' : c.ice === 'connected' || c.ice === 'completed' ? 'Connected' : c.ice || 'Checking network');
   var info = `<div class="c"${vid ? ' style="text-shadow:0 1px 4px #000"' : ''}>${vid ? '' : `<div class="av" style="margin:0 auto 12px">${c.video ? '🎥' : '📞'}</div>`}<div style="font-size:24px;font-weight:700">${esc(c.peer)}</div>
-  <div>${status}</div><div id="clk" style="font-size:28px">${c.state === 'active' ? clock() : ''}</div>
-  <div class="s" style="color:#94a3b8">${c.ice ? 'network: ' + esc(c.ice) : ''}</div></div>`;
+  <div>${reconnecting ? (S.lang==='om'?'Neetworkii deebisnee wal qunnamsiisaa…':S.lang==='am'?'ግንኙነት እንደገና በመመስረት ላይ…':'Reconnecting…') : status}</div><div id="clk" style="font-size:28px">${c.state === 'active' ? clock() : ''}</div>
+  <div class="ec-call-quality">● ${c.netQuality || netText}</div></div>`;
   var speakerBtn = IS_NATIVE_APP && !c.video && c.state === 'active'
     ? `<button class="x" onclick="toggleSpeaker()">${c.speakerOn ? '🔊 Speaker' : '📞 Earpiece'}</button>` : '';
   var btns = inc
@@ -1677,7 +1681,13 @@ function mkPeer() {
     var rv = $('rv'); if (rv && S.call && S.call.video) { rv.srcObject = e.streams[0]; rv.play().catch(function () {}); }
   };
   pc.oniceconnectionstatechange = function () {
-    if (S.call && pc) { S.call.ice = pc.iceConnectionState; render(); }
+    if (S.call && pc) {
+      S.call.ice = pc.iceConnectionState;
+      if (pc.iceConnectionState === 'failed') S.call.netLabel = 'Network failed';
+      else if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') S.call.netLabel = 'Connected';
+      else if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'checking') S.call.netLabel = 'Reconnecting';
+      render();
+    }
   };
   pc.onicecandidate = function (e) {
     if (e.candidate && S.call) socket.emit('webrtc:ice', {callId: S.call.id, candidate: e.candidate});
@@ -1705,11 +1715,35 @@ function limitBitrate() {
 }
 
 function tick() {
-  clearInterval(tickT);
+  clearInterval(tickT); clearInterval(callStatsT); lastCallStats = null;
   tickT = setInterval(function () {
     var e = $('clk');
     if (e && S.call && S.call.state === 'active') e.textContent = clock();
   }, 500);
+  callStatsT = setInterval(pollCallQuality, 4000);
+}
+async function pollCallQuality() {
+  if (!pc || !S.call || S.call.state !== 'active' || !pc.getStats) return;
+  try {
+    var stats = await pc.getStats(), pair = null, lost = 0, received = 0;
+    stats.forEach(function (s) {
+      if (s.type === 'candidate-pair' && s.state === 'succeeded' && (s.nominated || !pair)) pair = s;
+      if (s.type === 'inbound-rtp' && !s.isRemote && (s.kind === 'audio' || s.mediaType === 'audio')) {
+        lost += s.packetsLost || 0; received += s.packetsReceived || 0;
+      }
+    });
+    var rtt = pair && typeof pair.currentRoundTripTime === 'number' ? pair.currentRoundTripTime : null;
+    var prev = lastCallStats, loss = null;
+    if (prev && lost >= prev.lost && received >= prev.received) {
+      var dl = lost - prev.lost, dr = received - prev.received;
+      if (dl + dr > 0) loss = dl / (dl + dr);
+    }
+    lastCallStats = {lost:lost,received:received};
+    var quality = !rtt && loss === null ? '' :
+      ((rtt !== null && rtt > .6) || (loss !== null && loss > .08)) ? 'Poor network' :
+      ((rtt !== null && rtt > .25) || (loss !== null && loss > .03)) ? 'Fair network' : 'Good network';
+    if (S.call && quality && S.call.netQuality !== quality) { S.call.netQuality = quality; render(); }
+  } catch (e) {}
 }
 
 function cleanup() {
@@ -1720,7 +1754,7 @@ function cleanup() {
   if (pc) { pc.close(); pc = null; }
   if (localStream) { localStream.getTracks().forEach(function (tr) { tr.stop(); }); localStream = null; }
   $('remote').srcObject = null; $('rv').srcObject = null; $('lv').srcObject = null;
-  clearInterval(tickT); ringStop(); rbStop();
+  clearInterval(tickT); clearInterval(callStatsT); callStatsT = null; lastCallStats = null; ringStop(); rbStop();
   S.call = null; pendingIce = [];
   render();
   loadWallet().then(render);
