@@ -2,9 +2,9 @@ const crypto = require('crypto');
 
 function setupTelebirr(app, { pool, auth, changeCoins, io }) {
   const env = () => ({
-    base: process.env.TELEBIRR_MODE === 'uat'
-      ? 'https://developerportal.ethiotelebirr.et:38443/apiaccess/payment/gateway'
-      : 'https://superapp.ethiomobilemoney.et:38443/apiaccess/payment/gateway',
+    base: process.env.TELEBIRR_MODE === 'production'
+      ? 'https://superapp.ethiomobilemoney.et:38443/apiaccess/payment/gateway'
+      : 'https://developerportal.ethiotelebirr.et:38443/apiaccess/payment/gateway',
     fabricKey: process.env.TELEBIRR_FABRIC_APP_KEY,
     appSecret: process.env.TELEBIRR_APP_SECRET,
     merchantAppId: process.env.TELEBIRR_MERCHANT_APP_ID,
