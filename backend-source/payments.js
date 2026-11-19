@@ -39,7 +39,15 @@ function setupPayments(app, io, { pool, auth, changeCoins, normalizePhone, push 
         created_at timestamptz not null default now(),
         decided_at timestamptz
       );
-      create index if not exists creator_withdrawals_user_idx on creator_withdrawals(user_id,created_at desc);`);
+      create index if not exists creator_withdrawals_user_idx on creator_withdrawals(user_id,created_at desc);
+      create table if not exists platform_finance_settings (
+        id smallint primary key default 1 check (id=1),
+        diamond_etb_rate numeric(14,6),
+        minimum_withdrawal_diamonds bigint not null default 0,
+        updated_at timestamptz not null default now()
+      );
+      insert into platform_finance_settings(id,diamond_etb_rate,minimum_withdrawal_diamonds)
+      values(1,null,0) on conflict(id) do nothing;`);
     const b = await pool.query('select id from users where banned');
     b.rows.forEach((r) => bannedIds.add(r.id));
   }
@@ -109,16 +117,22 @@ function setupPayments(app, io, { pool, auth, changeCoins, normalizePhone, push 
         pool.query('select id,diamonds,amount_etb,payout_method,status,admin_note,created_at,decided_at from creator_withdrawals where user_id=$1 order by id desc limit 20',[req.user.id])
       ]);
       const reserved=Number(pending.rows[0].n)+Number(closed.rows[0].n);
-      res.json({diamonds:Math.max(0,Number(earned.rows[0].n)-reserved),earned:Number(earned.rows[0].n),pending:Number(pending.rows[0].n),withdrawn:Number(closed.rows[0].n),cashout_enabled:process.env.CREATOR_CASHOUT_ENABLED==='true',history:history.rows,requests:requests.rows});
+      const settings=(await pool.query('select diamond_etb_rate,minimum_withdrawal_diamonds from platform_finance_settings where id=1')).rows[0] || {};
+      const available=Math.max(0,Number(earned.rows[0].n)-reserved);
+      const rate=settings.diamond_etb_rate===null?null:Number(settings.diamond_etb_rate);
+      res.json({diamonds:available,earned:Number(earned.rows[0].n),pending:Number(pending.rows[0].n),withdrawn:Number(closed.rows[0].n),diamond_etb_rate:rate,estimated_etb:rate===null?null:Number((available*rate).toFixed(2)),minimum_withdrawal_diamonds:Number(settings.minimum_withdrawal_diamonds||0),cashout_enabled:process.env.CREATOR_CASHOUT_ENABLED==='true'&&rate!==null,history:history.rows,requests:requests.rows});
     } catch(e) { console.error(e); res.status(500).json({error:'Could not load creator balance'}); }
   });
 
   app.post('/wallet/creator/withdraw', auth, async (req,res) => {
     try {
       if(process.env.CREATOR_CASHOUT_ENABLED!=='true') return res.status(503).json({error:'Creator withdrawals are not open yet'});
+      const settings=(await pool.query('select diamond_etb_rate,minimum_withdrawal_diamonds from platform_finance_settings where id=1')).rows[0];
+      if(!settings || settings.diamond_etb_rate===null) return res.status(503).json({error:'Creator conversion rate has not been set yet'});
       const diamonds=Number(req.body?.diamonds), method=String(req.body?.payout_method||'').trim().toLowerCase(), account=String(req.body?.payout_account||'').trim();
       if(!Number.isSafeInteger(diamonds)||diamonds<1||diamonds>100000000) return res.status(400).json({error:'Enter a valid Diamond amount'});
       if(!['telebirr','bank'].includes(method)||account.length<6||account.length>80) return res.status(400).json({error:'Enter a valid Telebirr or bank payout account'});
+      if(diamonds<Number(settings.minimum_withdrawal_diamonds||0)) return res.status(400).json({error:'Below the minimum withdrawal amount'});
       const c=await pool.connect(); let request;
       try {
         await c.query('begin');
@@ -126,10 +140,10 @@ function setupPayments(app, io, { pool, auth, changeCoins, normalizePhone, push 
         const earned=await c.query('select coalesce(sum(diamonds),0)::bigint n from creator_earnings where user_id=$1',[req.user.id]);
         const reserved=await c.query("select coalesce(sum(diamonds),0)::bigint n from creator_withdrawals where user_id=$1 and status in ('pending','approved','paid')",[req.user.id]);
         if(diamonds>Number(earned.rows[0].n)-Number(reserved.rows[0].n)){await c.query('rollback');return res.status(409).json({error:'Not enough available Diamonds'});}
-        const saved=await c.query("insert into creator_withdrawals(user_id,diamonds,payout_method,payout_account) values($1,$2,$3,$4) returning id,diamonds,status,created_at",[req.user.id,diamonds,method,account]);
+        const saved=await c.query("insert into creator_withdrawals(user_id,diamonds,amount_etb,payout_method,payout_account) values($1,$2,round($2 * $5::numeric,2),$3,$4) returning id,diamonds,amount_etb,status,created_at",[req.user.id,diamonds,method,account,settings.diamond_etb_rate]);
         request=saved.rows[0]; await c.query('commit');
       } catch(e){await c.query('rollback').catch(()=>{});throw e;} finally{c.release();}
-      res.status(201).json({ok:true,request,message:'Withdrawal request submitted. The actual ETB amount is confirmed before payout.'});
+      res.status(201).json({ok:true,request,message:'Withdrawal request submitted. The estimated ETB amount is subject to final payout confirmation.'});
     } catch(e){console.error(e);res.status(500).json({error:'Could not submit withdrawal request'});}
   });
 
@@ -347,6 +361,24 @@ function setupPayments(app, io, { pool, auth, changeCoins, normalizePhone, push 
       console.error(e);
       res.status(500).json({ error: 'Server error' });
     }
+  });
+
+  app.get('/admin/finance-settings', async(req,res)=>{
+    if(!adminOk(req,res)) return;
+    try {
+      const r=await pool.query('select diamond_etb_rate,minimum_withdrawal_diamonds,updated_at from platform_finance_settings where id=1');
+      res.json(r.rows[0]||{diamond_etb_rate:null,minimum_withdrawal_diamonds:0});
+    } catch(e){console.error(e);res.status(500).json({error:'Could not load finance settings'});}
+  });
+  app.post('/admin/finance-settings', async(req,res)=>{
+    if(!adminOk(req,res)) return;
+    try {
+      const rate=Number(req.body?.diamond_etb_rate), minimum=Number(req.body?.minimum_withdrawal_diamonds||0);
+      if(!Number.isFinite(rate)||rate<=0||rate>100||!Number.isSafeInteger(minimum)||minimum<0||minimum>100000000)
+        return res.status(400).json({error:'Enter a valid ETB-per-Diamond rate and minimum amount'});
+      const r=await pool.query('update platform_finance_settings set diamond_etb_rate=$1,minimum_withdrawal_diamonds=$2,updated_at=now() where id=1 returning diamond_etb_rate,minimum_withdrawal_diamonds,updated_at',[rate,minimum]);
+      res.json({ok:true,settings:r.rows[0]});
+    } catch(e){console.error(e);res.status(500).json({error:'Could not save finance settings'});}
   });
 
   app.get('/admin/creator-withdrawals', async(req,res)=>{
