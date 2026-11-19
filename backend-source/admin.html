@@ -117,6 +117,18 @@ button{background:linear-gradient(120deg,var(--teal),#0b9b9a);color:#fff;border:
   <div class="s">Review reports fairly. Use the People section to suspend an account only when evidence supports action. Reports are private to administrators.</div>
 </div>
 
+<div class="card" id="creatorFinance">
+  <b>Creator Diamonds &amp; ETB conversion</b>
+  <p class="s">Set the value of one Creator Diamond in ETB. Do not enable withdrawals until your payout method and applicable permissions are ready.</p>
+  <div class="row"><input id="diamondRate" type="number" min="0.000001" step="0.000001" placeholder="ETB per Diamond"><input id="minDiamonds" type="number" min="0" step="1" placeholder="Minimum Diamonds"></div>
+  <button class="x" onclick="saveFinanceSettings()">Save conversion rate</button>
+  <div id="financeSummary" class="s"></div>
+  <hr>
+  <b>Withdrawal requests</b>
+  <select id="withdrawStatus" onchange="loadWithdrawals()"><option value="pending">Pending</option><option value="paid">Paid</option><option value="rejected">Rejected</option></select>
+  <button class="x" onclick="loadWithdrawals()">Refresh withdrawals</button>
+  <div id="withdrawalsList"></div>
+</div>
 <div class="card" id="packages">
 <b>Packages and prices</b>
   <div id="pk"></div>
@@ -144,7 +156,7 @@ async function call(path, method, body) {
 
 function lockAdmin() { KEY = ''; sessionStorage.removeItem('ak'); location.reload(); }
 function saveKey() { KEY = $('key').value.trim(); $('key').value = ''; if (!KEY) return say('Enter your admin key first.'); sessionStorage.setItem('ak', KEY); loadAll(); }
-function loadAll() { loadStats(); loadReqs(); loadUsers(); loadPackages(); loadAds(); loadHealth(); loadReports(); loadAdsterra(); }
+function loadAll() { loadStats(); loadReqs(); loadUsers(); loadPackages(); loadAds(); loadHealth(); loadReports(); loadAdsterra(); loadFinanceSettings(); loadWithdrawals(); }
 
 async function loadStats() {
   if (!KEY) return;
@@ -252,6 +264,47 @@ async function decideReport(id, status) {
   var r = await call('/admin/report/decision', 'POST', {id:id, status:status, note:note});
   say(r.ok ? 'Report updated' : (r.error || 'Could not update report'));
   loadReports();
+}
+
+async function loadFinanceSettings() {
+  if (!KEY) return;
+  var r = await call('/admin/finance-settings');
+  if (r.error) { $('financeSummary').textContent = r.error; return; }
+  $('diamondRate').value = r.diamond_etb_rate == null ? '' : r.diamond_etb_rate;
+  $('minDiamonds').value = r.minimum_withdrawal_diamonds || 0;
+  $('financeSummary').textContent = r.diamond_etb_rate == null ? 'Conversion rate not set. Withdrawals remain unavailable.' : '1 Diamond = ' + r.diamond_etb_rate + ' ETB';
+}
+async function saveFinanceSettings() {
+  var r = await call('/admin/finance-settings','POST',{diamond_etb_rate:$('diamondRate').value,minimum_withdrawal_diamonds:$('minDiamonds').value});
+  say(r.ok ? 'Creator conversion rate saved' : (r.error || 'Error'));
+  loadFinanceSettings();
+}
+async function loadWithdrawals() {
+  if (!KEY) return;
+  var r = await call('/admin/creator-withdrawals?status=' + encodeURIComponent($('withdrawStatus').value));
+  if (!Array.isArray(r)) { $('withdrawalsList').innerHTML = ''; return say(r.error || 'Could not load withdrawals'); }
+  $('withdrawalsList').innerHTML = r.map(function(w) {
+    var action = w.status === 'pending'
+      ? '<div class="row"><button class="g" onclick="markWithdrawalPaid('+w.id+','+Number(w.amount_etb||0)+')">Mark paid</button><button class="r" onclick="rejectWithdrawal('+w.id+')">Reject</button></div>' : '';
+    return '<div class="item"><b>#'+w.id+' · '+esc(w.name||w.phone)+' · '+Number(w.diamonds).toLocaleString()+' Diamonds</b><div class="s">'+esc(w.payout_method)+' · '+esc(w.payout_account)+'<br>Estimated ETB: '+(w.amount_etb==null?'Rate not set':Number(w.amount_etb).toFixed(2))+'<br>'+new Date(w.created_at).toLocaleString()+'</div>'+action+'</div>';
+  }).join('') || '<div class="s">No withdrawal requests.</div>';
+}
+async function markWithdrawalPaid(id, estimate) {
+  var amount = prompt('Enter actual ETB sent to user:', String(estimate));
+  if (amount === null) return;
+  var ref = prompt('Enter Telebirr/bank transfer reference:');
+  if (!ref) return;
+  if (!confirm('Have you actually sent ETB '+amount+' to this user?')) return;
+  var r = await call('/admin/creator-withdrawal/decide','POST',{id:id,action:'paid',amount_etb:amount,payout_reference:ref});
+  say(r.ok ? 'Payout marked paid' : (r.error || 'Error'));
+  loadWithdrawals();
+}
+async function rejectWithdrawal(id) {
+  var note = prompt('Reason for rejection:') || '';
+  if (!confirm('Reject this withdrawal request?')) return;
+  var r = await call('/admin/creator-withdrawal/decide','POST',{id:id,action:'reject',note:note});
+  say(r.ok ? 'Request rejected' : (r.error || 'Error'));
+  loadWithdrawals();
 }
 
 async function loadPackages() {
