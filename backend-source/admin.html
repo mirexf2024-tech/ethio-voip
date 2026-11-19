@@ -179,7 +179,7 @@ async function loadHealth() {
     return '<div class="stat"><b style="font-size:16px;color:' + (on ? '#16865b' : '#bd4242') + '">' +
       (on ? '● Ready' : '○ Not configured') + '</b><span class="s">' + esc(label) + '</span></div>';
   };
-  $('health').innerHTML = item('SMS gateway', !!r.sms) +
+  $('health').innerHTML = item('SMS gateway', !!r.sms) + item('Telebirr checkout', !!r.telebirr) + item('LiveKit streaming', !!(r.group_live && r.group_live.configured)) +
     item('Telegram verification', !!r.tg) + item('Translation service', !!r.tr) +
     item('Firebase push notifications', !!r.fcm) +
     item('International phone format (delivery depends on SMS provider)', !!r.international_phone_format) +
