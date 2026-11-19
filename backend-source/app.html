@@ -581,6 +581,7 @@ function groupView() {
   var sub = g.members.length + ' ' + t('members') + (g.username ? ' · @' + g.username : '');
   return `<div class="chatv"><div class="top"><span onclick="closeGroup()" style="font-size:22px;padding-right:12px">←</span>
   <span onclick="grpInfo()" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.name)}<br><span class="s" style="color:#d1fae5;font-weight:400">${esc(sub)} · ${t('tapInfo')}</span></span>
+  <span onclick="openGroupLive()" title="Group Live" style="font-size:20px;padding:8px;cursor:pointer">🎙️</span>
   <span onclick="grpInfo()" style="font-size:20px">ℹ️</span></div>
   ${g.info ? grpInfoHtml() : `<div id="msgs" class="msgs">${msgsHtml()}</div>${composer()}`}</div>`;
 }
@@ -1712,5 +1713,6 @@ fetch('/health').then(function (r) { return r.json(); }).then(function (j) {
 }).catch(function () {});
 if (S.token) { S.loading = true; render(); boot(); } else render();
 </script>
+<script src="/live-ui.js" defer></script>
 </body>
 </html>

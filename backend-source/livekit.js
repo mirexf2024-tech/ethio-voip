@@ -193,6 +193,7 @@ function setupGroupLive(app, io, { pool, auth }) {
     );
     const role = await participantState(live, req.user.id);
     io.in('u'+req.user.id).socketsJoin('gl'+live.id);
+    io.to('gl'+live.id).emit('live:participants-changed',{group_id:gid});
     res.json({
       live: { id: live.id, group_id: gid, host_id: live.host_id, status: live.status },
       token: await makeToken(live, req.user.id, role),
@@ -236,7 +237,8 @@ function setupGroupLive(app, io, { pool, auth }) {
       await c.query('rollback').catch(() => {});
       throw e;
     } finally { c.release(); }
-    res.json({ ok: true, user_id: targetId, role: 'speaker', message: 'Participant promoted. They must refresh their live connection to publish.' });
+    io.to('u'+targetId).emit('live:role-changed',{group_id:gid,live_id:live.id,role:'speaker'});
+    res.json({ ok: true, user_id: targetId, role: 'speaker', message: 'Participant promoted.' });
   }));
 
   // Host can remove a speaker or audience member from the LiveKit room.
@@ -255,6 +257,8 @@ function setupGroupLive(app, io, { pool, auth }) {
     await roomClient().removeParticipant(live.room_name, String(targetId)).catch((e) => {
       if (!/not found|participant/i.test(e.message)) throw e;
     });
+    io.to('u'+targetId).emit('live:removed',{group_id:gid,live_id:live.id});
+    io.to('gl'+live.id).emit('live:participants-changed',{group_id:gid});
     res.json({ ok: true, user_id: targetId });
   }));
 
@@ -266,6 +270,7 @@ function setupGroupLive(app, io, { pool, auth }) {
     if (live.host_id !== req.user.id) return fail(res, 403, 'Only the live host can end this live');
     await pool.query("update group_lives set status='ended',ended_at=now() where id=$1", [live.id]);
     await roomClient().deleteRoom(live.room_name).catch((e) => console.error('LiveKit room cleanup:', e.message));
+    io.to('gl'+live.id).emit('live:ended',{group_id:gid,live_id:live.id});
     res.json({ ok: true, ended: true });
   }));
 
@@ -368,6 +373,37 @@ function setupGroupLive(app, io, { pool, auth }) {
       [live.id]
     );
     res.json({gifts:r.rows});
+  }));
+
+  // Participant roster for the in-app live room.
+  app.get('/groups/:id/live/participants', auth, wrap(async (req, res) => {
+    const gid = groupId(req);
+    if (!gid || !(await member(gid, req.user.id))) return fail(res, 404, 'Group not found');
+    const live = await currentLive(gid);
+    if (!live) return res.json({ participants: [] });
+    const active = await roomClient().listParticipants(live.room_name);
+    const ids = active.map((p) => Number(p.identity)).filter((id) => Number.isSafeInteger(id) && id > 0);
+    if (!ids.length) return res.json({ participants: [], host_id: live.host_id, speaker_limit: 8 });
+    const r = await pool.query(
+      'select p.user_id,u.name,u.phone,p.role,p.joined_at from group_live_participants p join users u on u.id=p.user_id where p.live_id=$1 and p.user_id=any($2::int[]) order by case p.role when \'host\' then 0 when \'speaker\' then 1 else 2 end,p.joined_at',
+      [live.id, ids]
+    );
+    res.json({ participants: r.rows, host_id: live.host_id, speaker_limit: 8 });
+  }));
+
+  // Leave the room without ending the live for all other group members.
+  app.post('/groups/:id/live/leave', auth, wrap(async (req, res) => {
+    const gid = groupId(req);
+    if (!gid || !(await member(gid, req.user.id))) return fail(res, 404, 'Group not found');
+    const live = await currentLive(gid);
+    if (!live) return res.json({ ok: true });
+    if (live.host_id === req.user.id) return fail(res, 400, 'The host must end the live for everyone');
+    await pool.query('delete from group_live_participants where live_id=$1 and user_id=$2', [live.id, req.user.id]);
+    await roomClient().removeParticipant(live.room_name, String(req.user.id)).catch((e) => {
+      if (!/not found|participant/i.test(e.message)) throw e;
+    });
+    io.to('gl'+live.id).emit('live:participants-changed',{group_id:gid});
+    res.json({ ok: true });
   }));
 
   app.get('/groups/:id/live', auth, wrap(async (req, res) => {
