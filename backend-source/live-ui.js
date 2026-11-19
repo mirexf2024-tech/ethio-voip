@@ -29,14 +29,14 @@
       var role=p.role==='host'?w('host'):p.role==='speaker'?w('speaker'):w('audience');
       var self=Number(p.user_id)===Number(S.me && S.me.id);
       var canPromote=host() && p.role==='audience' && !self;
-      return '<div class="ec-live-person"><div><b>'+escHtml(p.name||p.phone||('Member '+p.user_id))+'</b><small>'+role+(self?' · '+w('you'):'')+'</small></div>'+(canPromote?'<button onclick="ecPromoteSpeaker('+Number(p.user_id)+')">Invite to speak</button>':'')+'</div>';
+      return '<div class="ec-live-person"><div><b>'+escHtml(p.name||p.phone||('Member '+p.user_id))+'</b><small>'+role+(self?' · '+w('you'):'')+'</small></div>'+(canPromote?'<button onclick="ecPromoteSpeaker('+Number(p.user_id)+')">'+w('invite')+'</button>':'')+'</div>';
     }).join('');
     var root=document.createElement('section'); root.id=overlayId; root.className='ec-live-overlay';
-    root.innerHTML='<div class="ec-live-head"><div><div style="font-size:10px;letter-spacing:2px;color:#f3c544;font-weight:800">ETHIO CALL · GROUP LIVE</div><h2>'+escHtml(g.name||'Live room')+'</h2><div class="ec-live-sub">'+(host()?w('host'):st.role==='speaker'?w('speaker'):w('audience'))+' · Up to 8 speakers</div></div><button class="ec-live-close" onclick="ecCloseLive()">Close</button></div>'+
-      '<div class="ec-live-stage"><div class="ec-live-mic">'+(st.role==='audience'?'🎧':'🎙️')+'</div><div style="font-size:18px;font-weight:800">'+escHtml(note||w('connected'))+'</div><div class="ec-live-muted" id="ec-live-count">'+st.participants.length+' participants</div></div>'+
-      '<h3 style="font-size:15px;margin:4px 0 10px">People in this room</h3><div class="ec-live-roster" id="ec-live-roster">'+(rows||'<div class="ec-live-muted">Waiting for participants…</div>')+'</div><div id="ec-live-audio" class="ec-live-audio"></div>'+
-      '<div class="ec-live-actions">'+(st.role==='host'||st.role==='speaker'?'<button class="soft" id="ec-live-mic" onclick="ecToggleMic()">🎙️ Mute microphone</button>':'<button class="soft" disabled>🎧 Listening mode</button>')+
-      (host()?'<button class="danger" onclick="ecEndLive()">End for everyone</button>':'<button class="danger" onclick="ecLeaveLive()">Leave room</button>')+'</div>';
+    root.innerHTML='<div class="ec-live-head"><div><div style="font-size:10px;letter-spacing:2px;color:#f3c544;font-weight:800">'+w('brand')+'</div><h2>'+escHtml(g.name||'Live room')+'</h2><div class="ec-live-sub">'+(host()?w('host'):st.role==='speaker'?w('speaker'):w('audience'))+' · '+w('limit')+'</div></div><button class="ec-live-close" onclick="ecCloseLive()">'+w('close')+'</button></div>'+
+      '<div class="ec-live-stage"><div class="ec-live-mic">'+(st.role==='audience'?'🎧':'🎙️')+'</div><div style="font-size:18px;font-weight:800">'+escHtml(note||w('connected'))+'</div><div class="ec-live-muted" id="ec-live-count">'+st.participants.length+' '+w('participants')+'</div></div>'+
+      '<h3 style="font-size:15px;margin:4px 0 10px">'+w('people')+'</h3><div class="ec-live-roster" id="ec-live-roster">'+(rows||'<div class="ec-live-muted">'+w('waiting')+'</div>')+'</div><div id="ec-live-audio" class="ec-live-audio"></div>'+
+      '<div class="ec-live-actions">'+(st.role==='host'||st.role==='speaker'?'<button class="soft" id="ec-live-mic" onclick="ecToggleMic()">🎙️ '+w('mute')+'</button>':'<button class="soft" disabled>🎧 '+w('listen')+'</button>')+
+      (host()?'<button class="danger" onclick="ecEndLive()">'+w('end')+'</button>':'<button class="danger" onclick="ecLeaveLive()">'+w('leave')+'</button>')+'</div>';
     document.body.appendChild(root);
   }
   async function sdk(){ return await import('https://cdn.jsdelivr.net/npm/livekit-client@2.15.0/+esm'); }
