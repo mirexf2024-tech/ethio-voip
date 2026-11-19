@@ -151,6 +151,7 @@ function setupGroupLive(app, io, { pool, auth }) {
     } finally {
       db.release();
     }
+    io.in('u'+req.user.id).socketsJoin('gl'+live.id);
     res.status(201).json({
       live: { id: live.id, group_id: gid, room_name: roomName, host_id: req.user.id, status: 'live' },
       token: await makeToken(live, req.user.id, 'host'),
@@ -168,6 +169,7 @@ function setupGroupLive(app, io, { pool, auth }) {
     const live = await currentLive(gid);
     if (!live) return fail(res, 404, 'No live is running in this group');
     const role = await participantState(live, req.user.id);
+    io.in('u'+req.user.id).socketsJoin('gl'+live.id);
     res.json({
       live: { id: live.id, group_id: gid, host_id: live.host_id, status: live.status },
       token: await makeToken(live, req.user.id, role),
