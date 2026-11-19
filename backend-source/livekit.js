@@ -2,7 +2,7 @@
 const crypto = require('crypto');
 const { AccessToken, RoomServiceClient } = require('livekit-server-sdk');
 
-function setupGroupLive(app, { pool, auth }) {
+function setupGroupLive(app, io, { pool, auth }) {
   const configured = () => !!(
     process.env.LIVEKIT_URL &&
     process.env.LIVEKIT_API_KEY &&
@@ -87,6 +87,34 @@ function setupGroupLive(app, { pool, auth }) {
       );
       create index if not exists group_live_participants_role_idx
         on group_live_participants(live_id,role);
+      create table if not exists live_gift_catalog (
+        code text primary key,
+        title text not null,
+        emoji text not null,
+        coin_cost int not null check (coin_cost > 0),
+        active boolean not null default true,
+        sort_order int not null default 0
+      );
+      create table if not exists live_gifts (
+        id bigserial primary key,
+        live_id bigint not null references group_lives(id) on delete cascade,
+        group_id int not null references groups(id) on delete cascade,
+        sender_id int not null references users(id) on delete cascade,
+        receiver_id int not null references users(id) on delete cascade,
+        gift_code text not null references live_gift_catalog(code),
+        quantity int not null check (quantity between 1 and 20),
+        total_coins int not null check (total_coins > 0),
+        created_at timestamptz not null default now(),
+        check (sender_id <> receiver_id)
+      );
+      create index if not exists live_gifts_live_recent_idx on live_gifts(live_id,created_at desc);
+      insert into live_gift_catalog(code,title,emoji,coin_cost,sort_order) values
+        ('heart','Heart','💛',1,1),
+        ('coffee','Coffee','☕',5,2),
+        ('flower','Flower','🌻',10,3),
+        ('crown','Crown','👑',25,4),
+        ('diamond','Diamond','💎',50,5)
+      on conflict(code) do nothing;
     `);
   }
 
@@ -211,6 +239,97 @@ function setupGroupLive(app, { pool, auth }) {
     await pool.query("update group_lives set status='ended',ended_at=now() where id=$1", [live.id]);
     await roomClient().deleteRoom(live.room_name).catch((e) => console.error('LiveKit room cleanup:', e.message));
     res.json({ ok: true, ended: true });
+  }));
+
+  // Available gifts for a live room. Costs are fixed server-side; clients cannot choose a price.
+  app.get('/groups/:id/live/gifts', auth, wrap(async (req, res) => {
+    const gid = groupId(req);
+    if (!gid || !(await member(gid, req.user.id))) return fail(res, 404, 'Group not found');
+    const r = await pool.query('select code,title,emoji,coin_cost from live_gift_catalog where active=true order by sort_order,code');
+    res.json({ gifts: r.rows });
+  }));
+
+  // Transfer coins atomically between sender and live host/participant and broadcast the gift.
+  app.post('/groups/:id/live/gift', auth, wrap(async (req, res) => {
+    const gid = groupId(req);
+    const me = gid ? await member(gid, req.user.id) : null;
+    if (!me) return fail(res, 404, 'Group not found');
+    const live = await currentLive(gid);
+    if (!live) return fail(res, 404, 'No live is running in this group');
+    const targetId = Number.parseInt(req.body?.to_user_id, 10);
+    const code = String(req.body?.gift_code || '').trim().toLowerCase();
+    const quantity = Number.parseInt(req.body?.quantity ?? 1, 10);
+    if (!Number.isSafeInteger(targetId) || targetId < 1 || targetId === req.user.id)
+      return fail(res, 400, 'Choose a valid recipient');
+    if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 20)
+      return fail(res, 400, 'Gift quantity must be between 1 and 20');
+    const recipient = await pool.query(
+      'select u.id,u.name from users u join group_live_participants p on p.user_id=u.id where p.live_id=$1 and u.id=$2',
+      [live.id, targetId]
+    );
+    if (!recipient.rowCount) return fail(res, 404, 'Recipient is not in this live');
+    const gift = await pool.query('select code,title,emoji,coin_cost from live_gift_catalog where code=$1 and active=true', [code]);
+    if (!gift.rowCount) return fail(res, 400, 'Gift is unavailable');
+    const item = gift.rows[0];
+    const total = item.coin_cost * quantity;
+    if (!Number.isSafeInteger(total) || total > 1000) return fail(res, 400, 'Gift total is too large');
+    const client = await pool.connect();
+    let senderBalance = 0, receiverBalance = 0, giftRow;
+    try {
+      await client.query('begin');
+      const locked = await client.query('select id,coins from users where id = any($1::int[]) order by id for update', [[req.user.id,targetId]]);
+      if (locked.rowCount !== 2) {
+        await client.query('rollback');
+        return fail(res, 404, 'Account not found');
+      }
+      const sender = locked.rows.find(x => x.id === req.user.id);
+      const receiver = locked.rows.find(x => x.id === targetId);
+      if (sender.coins < total) {
+        await client.query('rollback');
+        return fail(res, 402, 'Not enough coins');
+      }
+      senderBalance = sender.coins - total;
+      receiverBalance = receiver.coins + total;
+      await client.query('update users set coins=$2 where id=$1', [req.user.id,senderBalance]);
+      await client.query('update users set coins=$2 where id=$1', [targetId,receiverBalance]);
+      await client.query(
+        'insert into coin_tx(user_id,amount,balance_after,reason) values($1,$2,$3,$4),($5,$6,$7,$8)',
+        [req.user.id,-total,senderBalance,'live gift to '+targetId,targetId,total,receiverBalance,'live gift from '+req.user.id]
+      );
+      const saved = await client.query(
+        'insert into live_gifts(live_id,group_id,sender_id,receiver_id,gift_code,quantity,total_coins) values($1,$2,$3,$4,$5,$6,$7) returning id,created_at',
+        [live.id,gid,req.user.id,targetId,code,quantity,total]
+      );
+      giftRow = saved.rows[0];
+      await client.query('commit');
+    } catch (e) {
+      await client.query('rollback').catch(() => {});
+      throw e;
+    } finally { client.release(); }
+    const payload = {
+      id: giftRow.id, live_id: live.id, group_id: gid,
+      sender_id: req.user.id, receiver_id: targetId,
+      sender_name: req.user.name || 'Member',
+      receiver_name: recipient.rows[0].name || 'Member',
+      gift_code: item.code, title: item.title, emoji: item.emoji,
+      quantity, total_coins: total, created_at: giftRow.created_at
+    };
+    io.to('u'+req.user.id).emit('wallet:update',{coins:senderBalance,added:-total});
+    io.to('u'+targetId).emit('wallet:update',{coins:receiverBalance,added:total});
+    io.to('gl'+live.id).emit('live:gift',payload);
+    res.status(201).json({ok:true,gift:payload,coins:senderBalance});
+  }));
+
+  app.get('/groups/:id/live/history', auth, wrap(async (req, res) => {
+    const gid = groupId(req);
+    if (!gid || !(await member(gid,req.user.id))) return fail(res,404,'Group not found');
+    const live = await currentLive(gid);
+    if (!live) return res.json({gifts:[]});
+    const r = await pool.query(
+      'select id,sender_id,receiver_id,gift_code,quantity,total_coins,created_at from live_gifts where live_id=$1 order by id desc limit 50',
+      [live.id]
+    );
+    res.json({gifts:r.rows});
   }));
 
   app.get('/groups/:id/live', auth, wrap(async (req, res) => {
