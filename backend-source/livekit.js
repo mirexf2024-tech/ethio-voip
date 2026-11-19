@@ -115,6 +115,16 @@ function setupGroupLive(app, io, { pool, auth }) {
         check (sender_id <> receiver_id)
       );
       create index if not exists live_gifts_live_recent_idx on live_gifts(live_id,created_at desc);
+      create table if not exists creator_earnings (
+        id bigserial primary key,
+        user_id int not null references users(id) on delete cascade,
+        diamonds bigint not null check (diamonds > 0),
+        source text not null,
+        source_id bigint not null,
+        created_at timestamptz not null default now(),
+        unique(source,source_id)
+      );
+      create index if not exists creator_earnings_user_idx on creator_earnings(user_id,created_at desc);
       insert into live_gift_catalog(code,title,emoji,coin_cost,sort_order) values
         ('heart','Heart','💛',1,1),
         ('coffee','Coffee','☕',5,2),
@@ -292,7 +302,7 @@ function setupGroupLive(app, io, { pool, auth }) {
     const total = item.coin_cost * quantity;
     if (!Number.isSafeInteger(total) || total > 1000) return fail(res, 400, 'Gift total is too large');
     const client = await pool.connect();
-    let senderBalance = 0, receiverBalance = 0, giftRow;
+    let senderBalance = 0, giftRow;
     try {
       await client.query('begin');
       const recent = await client.query(
@@ -303,30 +313,32 @@ function setupGroupLive(app, io, { pool, auth }) {
         await client.query('rollback');
         return fail(res, 429, 'Please wait before sending another gift');
       }
-      const locked = await client.query('select id,coins from users where id = any($1::int[]) order by id for update', [[req.user.id,targetId]]);
-      if (locked.rowCount !== 2) {
+      const locked = await client.query('select id,coins from users where id=$1 for update', [req.user.id]);
+      if (!locked.rowCount) {
         await client.query('rollback');
-        return fail(res, 404, 'Account not found');
+        return fail(res, 404, 'Sender account not found');
       }
-      const sender = locked.rows.find(x => x.id === req.user.id);
-      const receiver = locked.rows.find(x => x.id === targetId);
+      const sender = locked.rows[0];
       if (sender.coins < total) {
         await client.query('rollback');
         return fail(res, 402, 'Not enough coins');
       }
       senderBalance = sender.coins - total;
-      receiverBalance = receiver.coins + total;
       await client.query('update users set coins=$2 where id=$1', [req.user.id,senderBalance]);
-      await client.query('update users set coins=$2 where id=$1', [targetId,receiverBalance]);
       await client.query(
-        'insert into coin_tx(user_id,amount,balance_after,reason) values($1,$2,$3,$4),($5,$6,$7,$8)',
-        [req.user.id,-total,senderBalance,'live gift to '+targetId,targetId,total,receiverBalance,'live gift from '+req.user.id]
+        'insert into coin_tx(user_id,amount,balance_after,reason) values($1,$2,$3,$4)',
+        [req.user.id,-total,senderBalance,'live gift to '+targetId]
       );
       const saved = await client.query(
         'insert into live_gifts(live_id,group_id,sender_id,receiver_id,gift_code,quantity,total_coins) values($1,$2,$3,$4,$5,$6,$7) returning id,created_at',
         [live.id,gid,req.user.id,targetId,code,quantity,total]
       );
       giftRow = saved.rows[0];
+      // Diamonds are creator reward points, separate from spendable Coins and ETB.
+      await client.query(
+        "insert into creator_earnings(user_id,diamonds,source,source_id) values($1,$2,'live_gift',$3) on conflict(source,source_id) do nothing",
+        [targetId,total,giftRow.id]
+      );
       await client.query('commit');
     } catch (e) {
       await client.query('rollback').catch(() => {});
@@ -341,7 +353,7 @@ function setupGroupLive(app, io, { pool, auth }) {
       quantity, total_coins: total, created_at: giftRow.created_at
     };
     io.to('u'+req.user.id).emit('wallet:update',{coins:senderBalance,added:-total});
-    io.to('u'+targetId).emit('wallet:update',{coins:receiverBalance,added:total});
+    io.to('u'+targetId).emit('creator:earnings:update',{diamonds_added:total,source:'live_gift'});
     io.to('gl'+live.id).emit('live:gift',payload);
     res.status(201).json({ok:true,gift:payload,coins:senderBalance});
   }));
