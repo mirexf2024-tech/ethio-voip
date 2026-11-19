@@ -3,6 +3,12 @@
   'use strict';
   var st = { room:null, groupId:0, liveId:0, role:'', participants:[], busy:false, timer:null };
   var overlayId = 'ec-live-overlay';
+  var words = {
+    om:{brand:w('brand'),host:'Ati hoogganaa jirta',speaker:'Ati dubbataa dha',audience:'Ati dhaggeeffataa jirta',limit:'Dubbataa hanga 8',people:'Namoota room keessa jiran',waiting:'Hirmaattota eegaa jira…',connected:'Room live waliin walqabatte',connecting:'Wal qunnamaa jira…',participants:'hirmaattota',you:'Ati',invite:'Dubbachuuf affeeri',mute:'Sagalee cufi',unmute:'Sagalee bani',listen:'Dhaggeeffannaa qofa',end:'Live nama hundaaf dhaabi',leave:'Room keessaa ba’i',close:'Cufi',permission:'Hayyama microphone Ethio Call’f kenni',ended:'Live kun xumurame',removed:'Live kana keessaa si baasaniiru',speakerNow:'Amma dubbataa taate',micError:'Microphone banachuun hin danda’amne',openGroup:'Jalqaba group bani',notRunning:'Live hin jiru. Admin group gaafadhu.',endConfirm:'Live kana nama hundaaf dhaabuu barbaaddaa?',liveEnded:'Live xumurame'},
+    am:{brand:'ETHIO CALL · የቡድን ቀጥታ',host:'እርስዎ አስተናጋጅ ነዎት',speaker:'እርስዎ ተናጋሪ ነዎት',audience:'እርስዎ አድማጭ ነዎት',limit:'እስከ 8 ተናጋሪዎች',people:'በቀጥታ ክፍሉ ያሉ ሰዎች',waiting:'ተሳታፊዎችን በመጠበቅ ላይ…',connected:'ከቀጥታ ክፍሉ ጋር ተገናኝተዋል',connecting:'በመገናኘት ላይ…',participants:'ተሳታፊዎች',you:'እርስዎ',invite:'እንዲናገር ጋብዝ',mute:'ማይክሮፎን ዝጋ',unmute:'ማይክሮፎን ክፈት',listen:'ማዳመጥ ብቻ',end:'ለሁሉም አቁም',leave:'ከክፍሉ ውጣ',close:'ዝጋ',permission:'ለEthio Call የማይክሮፎን ፈቃድ ይስጡ',ended:'ይህ ቀጥታ ስርጭት ተጠናቋል',removed:'ከዚህ ቀጥታ ስርጭት ተወግደዋል',speakerNow:'አሁን ተናጋሪ ሆነዋል',micError:'ማይክሮፎኑን መክፈት አልተቻለም',openGroup:'መጀመሪያ ቡድን ይክፈቱ',notRunning:'ቀጥታ ስርጭት የለም። የቡድኑን አስተዳዳሪ ይጠይቁ።',endConfirm:'ይህን ቀጥታ ስርጭት ለሁሉም ማቆም ይፈልጋሉ?',liveEnded:'ቀጥታ ስርጭቱ ተጠናቋል'},
+    en:{brand:w('brand'),host:w('host'),speaker:w('speaker'),audience:w('audience'),limit:'Up to 8 speakers',people:w('people'),waiting:w('waiting'),connected:w('connected'),connecting:w('connecting'),participants:'participants',you:'You',invite:w('invite'),mute:'Mute microphone',unmute:'Unmute microphone',listen:'Listening mode',end:w('end'),leave:w('leave'),close:w('close'),permission:w('permission'),ended:w('ended'),removed:w('removed'),speakerNow:w('speakerNow'),micError:'Could not enable microphone',openGroup:w('openGroup'),notRunning:'No live is running. Ask a group admin to start one.',endConfirm:w('endConfirm'),liveEnded:w('liveEnded')}
+  };
+  function w(key){var lang=window.S&&S.lang||'en';return (words[lang]&&words[lang][key])||words.en[key]||key;}
   var $id = function(id){ return document.getElementById(id); };
   var escHtml = function(v){ return String(v == null ? '' : v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); };
   function msg(s){ if(typeof toast==='function') toast(s,5000); else alert(s); }
@@ -20,14 +26,14 @@
     var old=overlay(); if(old) old.remove();
     var g=window.S && S.grp ? S.grp : {};
     var rows=st.participants.map(function(p){
-      var role=p.role==='host'?'Host':p.role==='speaker'?'Speaker':'Audience';
+      var role=p.role==='host'?w('host'):p.role==='speaker'?w('speaker'):w('audience');
       var self=Number(p.user_id)===Number(S.me && S.me.id);
       var canPromote=host() && p.role==='audience' && !self;
-      return '<div class="ec-live-person"><div><b>'+escHtml(p.name||p.phone||('Member '+p.user_id))+'</b><small>'+role+(self?' · You':'')+'</small></div>'+(canPromote?'<button onclick="ecPromoteSpeaker('+Number(p.user_id)+')">Invite to speak</button>':'')+'</div>';
+      return '<div class="ec-live-person"><div><b>'+escHtml(p.name||p.phone||('Member '+p.user_id))+'</b><small>'+role+(self?' · '+w('you'):'')+'</small></div>'+(canPromote?'<button onclick="ecPromoteSpeaker('+Number(p.user_id)+')">Invite to speak</button>':'')+'</div>';
     }).join('');
     var root=document.createElement('section'); root.id=overlayId; root.className='ec-live-overlay';
-    root.innerHTML='<div class="ec-live-head"><div><div style="font-size:10px;letter-spacing:2px;color:#f3c544;font-weight:800">ETHIO CALL · GROUP LIVE</div><h2>'+escHtml(g.name||'Live room')+'</h2><div class="ec-live-sub">'+(host()?'You are hosting':st.role==='speaker'?'You are a speaker':'You are listening')+' · Up to 8 speakers</div></div><button class="ec-live-close" onclick="ecCloseLive()">Close</button></div>'+
-      '<div class="ec-live-stage"><div class="ec-live-mic">'+(st.role==='audience'?'🎧':'🎙️')+'</div><div style="font-size:18px;font-weight:800">'+escHtml(note||'Connected to live room')+'</div><div class="ec-live-muted" id="ec-live-count">'+st.participants.length+' participants</div></div>'+
+    root.innerHTML='<div class="ec-live-head"><div><div style="font-size:10px;letter-spacing:2px;color:#f3c544;font-weight:800">ETHIO CALL · GROUP LIVE</div><h2>'+escHtml(g.name||'Live room')+'</h2><div class="ec-live-sub">'+(host()?w('host'):st.role==='speaker'?w('speaker'):w('audience'))+' · Up to 8 speakers</div></div><button class="ec-live-close" onclick="ecCloseLive()">Close</button></div>'+
+      '<div class="ec-live-stage"><div class="ec-live-mic">'+(st.role==='audience'?'🎧':'🎙️')+'</div><div style="font-size:18px;font-weight:800">'+escHtml(note||w('connected'))+'</div><div class="ec-live-muted" id="ec-live-count">'+st.participants.length+' participants</div></div>'+
       '<h3 style="font-size:15px;margin:4px 0 10px">People in this room</h3><div class="ec-live-roster" id="ec-live-roster">'+(rows||'<div class="ec-live-muted">Waiting for participants…</div>')+'</div><div id="ec-live-audio" class="ec-live-audio"></div>'+
       '<div class="ec-live-actions">'+(st.role==='host'||st.role==='speaker'?'<button class="soft" id="ec-live-mic" onclick="ecToggleMic()">🎙️ Mute microphone</button>':'<button class="soft" disabled>🎧 Listening mode</button>')+
       (host()?'<button class="danger" onclick="ecEndLive()">End for everyone</button>':'<button class="danger" onclick="ecLeaveLive()">Leave room</button>')+'</div>';
@@ -64,18 +70,18 @@
   function bindEvents(){
     if(!window.socket) return;
     socket.off('live:ended'); socket.off('live:role-changed'); socket.off('live:removed'); socket.off('live:participants-changed');
-    socket.on('live:ended',function(d){if(Number(d.group_id)===st.groupId){cleanup();msg('This live has ended');}});
+    socket.on('live:ended',function(d){if(Number(d.group_id)===st.groupId){cleanup();msg(w('ended'));}});
     socket.on('live:role-changed',async function(d){
       if(Number(d.group_id)!==st.groupId||!st.room) return;
-      try{var p=await api('/groups/'+st.groupId+'/live/token','POST',{});if(p.error)throw new Error(p.error);await connect(p);msg('You are now a speaker');}
+      try{var p=await api('/groups/'+st.groupId+'/live/token','POST',{});if(p.error)throw new Error(p.error);await connect(p);msg(w('speakerNow'));}
       catch(e){msg(e.message||'Could not enable microphone');}
     });
-    socket.on('live:removed',function(d){if(Number(d.group_id)===st.groupId){cleanup();msg('You were removed from this live');}});
+    socket.on('live:removed',function(d){if(Number(d.group_id)===st.groupId){cleanup();msg(w('removed'));}});
     socket.on('live:participants-changed',function(d){if(Number(d.group_id)===st.groupId)roster();});
   }
   async function open(){
     if(st.busy) return;
-    var gid=groupId(); if(!gid) return msg('Open a group first');
+    var gid=groupId(); if(!gid) return msg(w('openGroup'));
     st.busy=true; st.groupId=gid;
     try{
       var status=await api('/groups/'+gid+'/live');
@@ -85,7 +91,7 @@
       else payload=await api('/groups/'+gid+'/live/token','POST',{});
       if(payload.error) throw new Error(payload.error);
       st.liveId=Number(payload.live&&payload.live.id)||0; st.role=payload.role;
-      render('Connecting…');
+      render(w('connecting'));
       await connect(payload);
       bindEvents();
       if(st.timer) clearInterval(st.timer);
@@ -98,8 +104,8 @@
     try{
       var on=!st.room.localParticipant.isMicrophoneEnabled;
       await st.room.localParticipant.setMicrophoneEnabled(on);
-      var b=$id('ec-live-mic'); if(b) b.textContent=on?'🎙️ Mute microphone':'🔇 Unmute microphone';
-    }catch(e){msg('Please allow microphone access for Ethio Call');}
+      var b=$id('ec-live-mic'); if(b) b.textContent=on?'🎙️ '+w('mute'):'🔇 '+w('unmute');
+    }catch(e){msg(w('permission'));}
   }
   async function promote(uid){
     var r=await api('/groups/'+st.groupId+'/live/promote','POST',{user_id:uid});
@@ -120,11 +126,11 @@
     st.groupId=0;
   }
   async function end(){
-    if(!host()||!confirm('End this live room for everyone?')) return;
+    if(!host()||!confirm(w('endConfirm'))) return;
     var gid=st.groupId;
     var r=await api('/groups/'+gid+'/live/end','POST',{});
     if(r&&r.error) return msg(r.error);
-    cleanup();st.groupId=0;msg('Live ended');
+    cleanup();st.groupId=0;msg(w('liveEnded'));
   }
   function close(){ if(host()) return end(); return leave(); }
   window.openGroupLive=open;
