@@ -1648,6 +1648,12 @@ function connect() {
     if (S.set.sound) beep(0.3);
     loadWallet().then(loadReqs).then(loadBonus).then(function () { render(); toast('+' + d.added + ' 🪙', 5000); });
   });
+  socket.on('creator:earnings:update', function () {
+    loadWallet().then(function () { if (S.tab === 'wallet') render(); });
+  });
+  socket.on('creator:withdrawal:update', function () {
+    loadWallet().then(function () { if (S.tab === 'wallet') render(); });
+  });
   socket.on('call:low_balance', function () { toast('⚠ ' + t('balance') + ' < 1'); });
   socket.on('call:ended', function (d) {
     var vd = !!(S.call && S.call.video);
