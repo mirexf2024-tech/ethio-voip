@@ -25,7 +25,21 @@ function setupPayments(app, io, { pool, auth, changeCoins, normalizePhone, push 
       );
       create unique index if not exists purchases_ref_unique
         on purchases(lower(ref)) where status <> 'rejected';
-      alter table users add column if not exists banned boolean not null default false;`);
+      alter table users add column if not exists banned boolean not null default false;
+      create table if not exists creator_withdrawals (
+        id bigserial primary key,
+        user_id int not null references users(id) on delete cascade,
+        diamonds bigint not null check (diamonds > 0),
+        amount_etb numeric(12,2),
+        payout_method text,
+        payout_account text,
+        payout_reference text,
+        status text not null default 'pending' check (status in ('pending','approved','paid','rejected')),
+        admin_note text,
+        created_at timestamptz not null default now(),
+        decided_at timestamptz
+      );
+      create index if not exists creator_withdrawals_user_idx on creator_withdrawals(user_id,created_at desc);`);
     const b = await pool.query('select id from users where banned');
     b.rows.forEach((r) => bannedIds.add(r.id));
   }
@@ -82,6 +96,41 @@ function setupPayments(app, io, { pool, auth, changeCoins, normalizePhone, push 
       [req.user.id]
     );
     res.json(r.rows);
+  });
+
+  // Creator Diamonds are earned from gifts; they are not cash until a payout is confirmed.
+  app.get('/wallet/creator', auth, async (req,res) => {
+    try {
+      const [earned,pending,closed,history,requests] = await Promise.all([
+        pool.query('select coalesce(sum(diamonds),0)::bigint n from creator_earnings where user_id=$1',[req.user.id]),
+        pool.query("select coalesce(sum(diamonds),0)::bigint n from creator_withdrawals where user_id=$1 and status='pending'",[req.user.id]),
+        pool.query("select coalesce(sum(diamonds),0)::bigint n from creator_withdrawals where user_id=$1 and status in ('approved','paid')",[req.user.id]),
+        pool.query('select id,diamonds,source,source_id,created_at from creator_earnings where user_id=$1 order by id desc limit 30',[req.user.id]),
+        pool.query('select id,diamonds,amount_etb,payout_method,status,admin_note,created_at,decided_at from creator_withdrawals where user_id=$1 order by id desc limit 20',[req.user.id])
+      ]);
+      const reserved=Number(pending.rows[0].n)+Number(closed.rows[0].n);
+      res.json({diamonds:Math.max(0,Number(earned.rows[0].n)-reserved),earned:Number(earned.rows[0].n),pending:Number(pending.rows[0].n),withdrawn:Number(closed.rows[0].n),cashout_enabled:process.env.CREATOR_CASHOUT_ENABLED==='true',history:history.rows,requests:requests.rows});
+    } catch(e) { console.error(e); res.status(500).json({error:'Could not load creator balance'}); }
+  });
+
+  app.post('/wallet/creator/withdraw', auth, async (req,res) => {
+    try {
+      if(process.env.CREATOR_CASHOUT_ENABLED!=='true') return res.status(503).json({error:'Creator withdrawals are not open yet'});
+      const diamonds=Number(req.body?.diamonds), method=String(req.body?.payout_method||'').trim().toLowerCase(), account=String(req.body?.payout_account||'').trim();
+      if(!Number.isSafeInteger(diamonds)||diamonds<1||diamonds>100000000) return res.status(400).json({error:'Enter a valid Diamond amount'});
+      if(!['telebirr','bank'].includes(method)||account.length<6||account.length>80) return res.status(400).json({error:'Enter a valid Telebirr or bank payout account'});
+      const c=await pool.connect(); let request;
+      try {
+        await c.query('begin');
+        await c.query('select id from users where id=$1 for update',[req.user.id]);
+        const earned=await c.query('select coalesce(sum(diamonds),0)::bigint n from creator_earnings where user_id=$1',[req.user.id]);
+        const reserved=await c.query("select coalesce(sum(diamonds),0)::bigint n from creator_withdrawals where user_id=$1 and status in ('pending','approved','paid')",[req.user.id]);
+        if(diamonds>Number(earned.rows[0].n)-Number(reserved.rows[0].n)){await c.query('rollback');return res.status(409).json({error:'Not enough available Diamonds'});}
+        const saved=await c.query("insert into creator_withdrawals(user_id,diamonds,payout_method,payout_account) values($1,$2,$3,$4) returning id,diamonds,status,created_at",[req.user.id,diamonds,method,account]);
+        request=saved.rows[0]; await c.query('commit');
+      } catch(e){await c.query('rollback').catch(()=>{});throw e;} finally{c.release();}
+      res.status(201).json({ok:true,request,message:'Withdrawal request submitted. The actual ETB amount is confirmed before payout.'});
+    } catch(e){console.error(e);res.status(500).json({error:'Could not submit withdrawal request'});}
   });
 
   // ---------- admin side (needs ADMIN_KEY set on Render) ----------
@@ -298,6 +347,33 @@ function setupPayments(app, io, { pool, auth, changeCoins, normalizePhone, push 
       console.error(e);
       res.status(500).json({ error: 'Server error' });
     }
+  });
+
+  app.get('/admin/creator-withdrawals', async(req,res)=>{
+    if(!adminOk(req,res)) return;
+    try {
+      const status=['pending','approved','paid','rejected'].includes(req.query.status)?req.query.status:'pending';
+      const r=await pool.query(`select w.id,w.user_id,w.diamonds,w.amount_etb,w.payout_method,w.payout_account,w.payout_reference,w.status,w.admin_note,w.created_at,u.name,u.phone from creator_withdrawals w join users u on u.id=w.user_id where w.status=$1 order by w.id asc limit 100`,[status]);
+      res.json(r.rows);
+    } catch(e){console.error(e);res.status(500).json({error:'Could not load withdrawal requests'});}
+  });
+
+  app.post('/admin/creator-withdrawal/decide',async(req,res)=>{
+    if(!adminOk(req,res)) return;
+    try {
+      const id=Number(req.body?.id), action=String(req.body?.action||''), note=String(req.body?.note||'').slice(0,240);
+      if(!Number.isSafeInteger(id)||id<1) return res.status(400).json({error:'Invalid request'});
+      if(action==='reject'){
+        const r=await pool.query("update creator_withdrawals set status='rejected',admin_note=$2,decided_at=now() where id=$1 and status='pending' returning id",[id,note]);
+        return r.rowCount?res.json({ok:true}):res.status(409).json({error:'Request already decided'});
+      }
+      const amount=Number(req.body?.amount_etb), reference=String(req.body?.payout_reference||'').trim().slice(0,100);
+      if(action!=='paid'||!Number.isFinite(amount)||amount<=0||amount>10000000||reference.length<5) return res.status(400).json({error:'Enter actual ETB amount and payout transaction reference after sending payment'});
+      const r=await pool.query("update creator_withdrawals set status='paid',amount_etb=$2,payout_reference=$3,admin_note=$4,decided_at=now() where id=$1 and status='pending' returning id,user_id,diamonds,amount_etb,status",[id,amount,reference,note]);
+      if(!r.rowCount) return res.status(409).json({error:'Request already decided'});
+      io.to('u'+r.rows[0].user_id).emit('creator:withdrawal:update',{id,status:'paid',amount_etb:r.rows[0].amount_etb});
+      res.json({ok:true,withdrawal:r.rows[0]});
+    } catch(e){console.error(e);res.status(500).json({error:'Could not update withdrawal'});}
   });
 
   app.get('/admin/packages', async (req, res) => {
