@@ -23,7 +23,9 @@
   }
   function render(note){
     styles();
-    var old=overlay(); if(old) old.remove();
+    var old=overlay();
+    var audioNodes=old?Array.prototype.slice.call(old.querySelectorAll('#ec-live-audio audio')):[];
+    if(old) old.remove();
     var g=window.S && S.grp ? S.grp : {};
     var rows=st.participants.map(function(p){
       var role=p.role==='host'?w('host'):p.role==='speaker'?w('speaker'):w('audience');
@@ -38,6 +40,8 @@
       '<div class="ec-live-actions">'+(st.role==='host'||st.role==='speaker'?'<button class="soft" id="ec-live-mic" onclick="ecToggleMic()">🎙️ '+w('mute')+'</button>':'<button class="soft" disabled>🎧 '+w('listen')+'</button>')+
       (host()?'<button class="danger" onclick="ecEndLive()">'+w('end')+'</button>':'<button class="danger" onclick="ecLeaveLive()">'+w('leave')+'</button>')+'</div>';
     document.body.appendChild(root);
+    var audioBox=$id('ec-live-audio');
+    audioNodes.forEach(function(node){ if(audioBox) audioBox.appendChild(node); });
   }
   async function sdk(){ return await import('https://cdn.jsdelivr.net/npm/livekit-client@2.15.0/+esm'); }
   async function roster(){
