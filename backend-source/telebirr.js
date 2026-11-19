@@ -140,21 +140,37 @@ function setupTelebirr(app, { pool, auth, changeCoins, io }) {
       if(!Number.isFinite(amount)||amount!==Number(o.amount_etb)) return res.status(400).send('Amount mismatch');
       if(o.status==='paid'||o.purchase_status==='approved') return res.status(200).send('SUCCESS');
       if(o.status!=='pending'||o.purchase_status!=='pending') return res.status(409).send('Order is not pending');
-      const claimed=await pool.query(
-        "update purchases set status='approved',decided_at=now() where id=$1 and status='pending' returning id,user_id,coins",
-        [o.purchase_id]
-      );
-      if(!claimed.rowCount) return res.status(200).send('SUCCESS');
-      const balance=await changeCoins(o.user_id,claimed.rows[0].coins,'telebirr:'+o.merch_order_id);
-      if(balance===null) {
-        await pool.query("update purchases set status='pending',decided_at=null where id=$1 and status='approved'",[o.purchase_id]);
-        return res.status(500).send('Coin credit failed');
-      }
-      await pool.query(
-        "update telebirr_orders set status='paid',payment_order_id=$2,trans_id=$3,callback_payload=$4::jsonb,paid_at=now() where id=$1",
-        [o.id,String(body.payment_order_id||''),String(body.trans_id||''),JSON.stringify(body)]
-      );
-      io.to('u'+o.user_id).emit('wallet:update',{coins:balance,added:claimed.rows[0].coins});
+      const client=await pool.connect();
+      let balance,added;
+      try {
+        await client.query('begin');
+        const locked=await client.query(
+          "select p.id,p.user_id,p.coins,p.status,t.id as telebirr_id,t.status as telebirr_status from purchases p join telebirr_orders t on t.purchase_id=p.id where p.id=$1 for update of p,t",
+          [o.purchase_id]
+        );
+        if(!locked.rowCount || locked.rows[0].status!=='pending' || locked.rows[0].telebirr_status!=='pending') {
+          await client.query('rollback');
+          return res.status(200).send('SUCCESS');
+        }
+        const row=locked.rows[0];
+        const credited=await client.query('update users set coins=coins+$2 where id=$1 returning coins',[row.user_id,row.coins]);
+        if(!credited.rowCount) throw new Error('User account missing during payment credit');
+        balance=credited.rows[0].coins; added=row.coins;
+        await client.query("update purchases set status='approved',decided_at=now() where id=$1",[row.id]);
+        await client.query(
+          'insert into coin_tx(user_id,amount,balance_after,reason) values($1,$2,$3,$4)',
+          [row.user_id,row.coins,balance,'telebirr:'+o.merch_order_id]
+        );
+        await client.query(
+          "update telebirr_orders set status='paid',payment_order_id=$2,trans_id=$3,callback_payload=$4::jsonb,paid_at=now() where id=$1",
+          [row.telebirr_id,body.payment_order_id?String(body.payment_order_id):null,body.trans_id?String(body.trans_id):null,JSON.stringify(body)]
+        );
+        await client.query('commit');
+      } catch(err) {
+        await client.query('rollback').catch(()=>{});
+        throw err;
+      } finally { client.release(); }
+      io.to('u'+o.user_id).emit('wallet:update',{coins:balance,added});
       res.status(200).send('SUCCESS');
     } catch(e) {
       console.error('Telebirr notify error:',e.message);
