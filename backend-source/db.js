@@ -16,6 +16,14 @@ const pool = new Pool({
   max: 10,
 });
 
+// A database connection can be closed by Neon/Render while idle. node-postgres
+// emits that as a Pool-level error; without a listener Node treats it as an
+// unhandled EventEmitter error and terminates the whole API process.
+// The pool discards the failed client and creates a fresh one for later queries.
+pool.on('error', (err) => {
+  console.error('PostgreSQL idle connection dropped; pool will recover:', err.message);
+});
+
 async function init() {
   await pool.query(`
   create table if not exists users(
