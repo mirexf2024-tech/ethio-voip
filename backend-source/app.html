@@ -698,18 +698,20 @@ function creatorWalletCard() {
     title:'Galii Uumaa (Diamonds)', balance:'Diamonds argaman', pending:'Gaaffii baasii eeggataa',
     withdraw:'Qarshii baafadhu', amount:'Baay’ina Diamonds', method:'Karaa kaffaltii',
     account:'Lakkoofsa Telebirr ykn account baankii', disabled:'Baasiin amma hin banamne',
-    note:'Diamonds kennaa irraa argaman. Gatiin ETB fi baasuun erga mirkanaa’ee booda hojii irra oola.',
+    note:'Diamonds kennaa irraa argaman. Gatiin ETB adminiin murtaa’a; kaffaltiin dhugaan erga mirkanaa’ee booda raawwatama.',
     send:'Gaaffii baasii ergi'
   } : {
     title:'Creator earnings (Diamonds)', balance:'Available Diamonds', pending:'Pending withdrawal',
     withdraw:'Withdraw', amount:'Diamond amount', method:'Payout method',
     account:'Telebirr or bank account', disabled:'Withdrawals are not open yet',
-    note:'Diamonds are creator reward points, not cash. ETB value is confirmed before payout.',
+    note:'Diamonds are creator reward points. The displayed ETB conversion is set by the platform; actual payout is verified.',
     send:'Submit withdrawal'
   };
   return `<div class="card"><b>${label.title}</b>
     <div class="big">💎 ${Number(c.diamonds||0).toLocaleString()}</div>
     <div class="s c">${label.balance} · ${label.pending}: ${Number(c.pending||0).toLocaleString()}</div>
+    <div class="s">${c.diamond_etb_rate == null ? 'ETB conversion rate not set' : '1 💎 = ' + Number(c.diamond_etb_rate).toFixed(6) + ' ETB · Estimated total: ' + Number(c.estimated_etb||0).toFixed(2) + ' ETB'}</div>
+    ${c.minimum_withdrawal_diamonds ? '<div class="s">Minimum withdrawal: ' + Number(c.minimum_withdrawal_diamonds).toLocaleString() + ' 💎</div>' : ''}
     <div class="s" style="margin:8px 0">${label.note}</div>
     ${c.cashout_enabled ? `<input id="wdDiamonds" type="number" min="1" step="1" inputmode="numeric" placeholder="${label.amount}">
       <select id="wdMethod"><option value="telebirr">Telebirr</option><option value="bank">Bank</option></select>
@@ -723,6 +725,7 @@ function walletTab() {
   var free = S.payInfo && S.payInfo.free;
   return `<div class="card"><div class="s c">${t('balance')}</div><div class="big">🪙 ${S.coins}</div><div class="s c">${t('rate')}</div></div>
   ${bonusCards()}
+  ${creatorWalletCard()}
   ${rewardCard()}
   ${payCard()}
   <div class="card"><b>${t('packages')}</b> ${free ? `<span class="s">${t('testBuy')}</span>` : ''}${S.pkgs.map(function (p) {
@@ -938,6 +941,17 @@ async function delAcc() {
 async function loadWallet() {
   var r = await api('/wallet');
   if (r.coins !== undefined) { S.coins = r.coins; S.hist = r.history || []; }
+  var c = await api('/wallet/creator');
+  if (c && c.diamonds !== undefined) S.creator = c;
+}
+async function requestCreatorWithdrawal() {
+  var amount = Number($('wdDiamonds') && $('wdDiamonds').value);
+  var method = $('wdMethod') && $('wdMethod').value;
+  var account = $('wdAccount') && $('wdAccount').value.trim();
+  if (!Number.isSafeInteger(amount) || amount < 1 || !account) return toast('Mee odeeffannoo guutuu galchi');
+  var r = await api('/wallet/creator/withdraw','POST',{diamonds:amount,payout_method:method,payout_account:account});
+  if (!r.ok) return toast(r.error || 'Withdrawal request failed');
+  await loadWallet(); render(); toast('Gaaffiin baasii ergameera');
 }
 async function loadChats() {
   var r = await api('/chats');
