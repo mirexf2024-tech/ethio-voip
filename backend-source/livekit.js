@@ -193,6 +193,7 @@ function setupGroupLive(app, io, { pool, auth }) {
     );
     const role = await participantState(live, req.user.id);
     io.in('u'+req.user.id).socketsJoin('gl'+live.id);
+    io.to('gl'+live.id).emit('live:participants-changed',{group_id:gid});
     res.json({
       live: { id: live.id, group_id: gid, host_id: live.host_id, status: live.status },
       token: await makeToken(live, req.user.id, role),
