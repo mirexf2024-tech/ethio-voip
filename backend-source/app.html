@@ -968,7 +968,14 @@ async function buy(id) {
     if (r.coins === undefined) return toast(r.error || 'Error');
     await loadWallet(); return render();
   }
+  var payment = await api('/wallet/telebirr/order','POST',{package_id:id});
+  if (payment && payment.checkout_url) {
+    location.href = payment.checkout_url;
+    return;
+  }
+  // Keep the existing transaction-ID/manual verification flow available until merchant API credentials are active.
   S.payPkg = id; render();
+  if (payment && payment.error && !/not configured/i.test(payment.error)) toast(payment.error);
 }
 async function loadBonus() {
   var r = await api('/bonus-info');
