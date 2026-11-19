@@ -561,7 +561,7 @@ const growth = setupGrowth(app, io, { pool, auth, changeCoins, normalizePhone, p
 const payments = setupPayments(app, io, { pool, auth, changeCoins, normalizePhone, push });
 const groups = setupGroups(app, io, { pool, auth, normalizePhone, push });
 const ads = setupAds(app, { pool, auth, changeCoins, adminOk: (req, res) => payments.adminOk(req, res) });
-const groupLive = setupGroupLive(app, { pool, auth });
+const groupLive = setupGroupLive(app, io, { pool, auth });
 
 init()
   .then(() => push.init())
