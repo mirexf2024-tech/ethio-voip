@@ -381,9 +381,12 @@ function setupGroupLive(app, io, { pool, auth }) {
     if (!gid || !(await member(gid, req.user.id))) return fail(res, 404, 'Group not found');
     const live = await currentLive(gid);
     if (!live) return res.json({ participants: [] });
+    const active = await roomClient().listParticipants(live.room_name);
+    const ids = active.map((p) => Number(p.identity)).filter((id) => Number.isSafeInteger(id) && id > 0);
+    if (!ids.length) return res.json({ participants: [], host_id: live.host_id, speaker_limit: 8 });
     const r = await pool.query(
-      'select p.user_id,u.name,u.phone,p.role,p.joined_at from group_live_participants p join users u on u.id=p.user_id where p.live_id=$1 order by case p.role when \'host\' then 0 when \'speaker\' then 1 else 2 end,p.joined_at',
-      [live.id]
+      'select p.user_id,u.name,u.phone,p.role,p.joined_at from group_live_participants p join users u on u.id=p.user_id where p.live_id=$1 and p.user_id=any($2::int[]) order by case p.role when \'host\' then 0 when \'speaker\' then 1 else 2 end,p.joined_at',
+      [live.id, ids]
     );
     res.json({ participants: r.rows, host_id: live.host_id, speaker_limit: 8 });
   }));
