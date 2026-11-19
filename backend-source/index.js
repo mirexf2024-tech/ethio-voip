@@ -310,6 +310,7 @@ app.get('/health', async (_, res) => {
     ok: ready,
     database,
     group_live: { configured: liveKitConfigured, tables_ready: groupLiveTables },
+    telebirr: !!(process.env.TELEBIRR_FABRIC_APP_KEY && process.env.TELEBIRR_APP_SECRET && process.env.TELEBIRR_MERCHANT_APP_ID && process.env.TELEBIRR_MERCHANT_CODE && process.env.TELEBIRR_PRIVATE_KEY_PEM && process.env.TELEBIRR_PUBLIC_KEY_PEM && process.env.TELEBIRR_CHECKOUT_BASE_URL),
     sms: SMS_ON,
     tg: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_BOT_USERNAME && process.env.TELEGRAM_WEBHOOK_SECRET),
     tr: !!(process.env.GOOGLE_TRANSLATE_KEY || process.env.TRANSLATE_EMAIL),
