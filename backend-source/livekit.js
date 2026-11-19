@@ -87,6 +87,13 @@ function setupGroupLive(app, io, { pool, auth }) {
       );
       create index if not exists group_live_participants_role_idx
         on group_live_participants(live_id,role);
+      create table if not exists group_live_removed (
+        live_id bigint not null references group_lives(id) on delete cascade,
+        user_id int not null references users(id) on delete cascade,
+        removed_by int references users(id) on delete set null,
+        created_at timestamptz not null default now(),
+        primary key(live_id,user_id)
+      );
       create table if not exists live_gift_catalog (
         code text primary key,
         title text not null,
@@ -168,6 +175,8 @@ function setupGroupLive(app, io, { pool, auth }) {
     if (!me) return fail(res, 404, 'Group not found');
     const live = await currentLive(gid);
     if (!live) return fail(res, 404, 'No live is running in this group');
+    const removed = await pool.query('select 1 from group_live_removed where live_id=$1 and user_id=$2',[live.id,req.user.id]);
+    if (removed.rowCount) return fail(res,403,'You were removed from this live');
     await pool.query(
       "insert into group_live_participants(live_id,user_id,role) values($1,$2,'audience') on conflict(live_id,user_id) do nothing",
       [live.id,req.user.id]
@@ -225,11 +234,14 @@ function setupGroupLive(app, io, { pool, auth }) {
     const gid = groupId(req);
     const live = gid ? await currentLive(gid) : null;
     if (!live) return fail(res, 404, 'No live is running in this group');
-    if (live.host_id !== req.user.id) return fail(res, 403, 'Only the live host can remove participants');
+    const actor = await member(gid,req.user.id);
+    if (live.host_id !== req.user.id && !['owner','admin','mod'].includes(actor?.role))
+      return fail(res,403,'Only the host or a group moderator can remove participants');
     const targetId = Number.parseInt(req.body?.user_id, 10);
     if (!Number.isSafeInteger(targetId) || targetId < 1 || targetId === live.host_id)
       return fail(res, 400, 'Invalid participant');
     await pool.query('delete from group_live_participants where live_id=$1 and user_id=$2', [live.id, targetId]);
+    await pool.query('insert into group_live_removed(live_id,user_id,removed_by) values($1,$2,$3) on conflict(live_id,user_id) do update set removed_by=excluded.removed_by,created_at=now()', [live.id,targetId,req.user.id]);
     await roomClient().removeParticipant(live.room_name, String(targetId)).catch((e) => {
       if (!/not found|participant/i.test(e.message)) throw e;
     });
