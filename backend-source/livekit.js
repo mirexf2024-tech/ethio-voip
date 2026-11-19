@@ -168,6 +168,10 @@ function setupGroupLive(app, io, { pool, auth }) {
     if (!me) return fail(res, 404, 'Group not found');
     const live = await currentLive(gid);
     if (!live) return fail(res, 404, 'No live is running in this group');
+    await pool.query(
+      "insert into group_live_participants(live_id,user_id,role) values($1,$2,'audience') on conflict(live_id,user_id) do nothing",
+      [live.id,req.user.id]
+    );
     const role = await participantState(live, req.user.id);
     io.in('u'+req.user.id).socketsJoin('gl'+live.id);
     res.json({
@@ -279,6 +283,14 @@ function setupGroupLive(app, io, { pool, auth }) {
     let senderBalance = 0, receiverBalance = 0, giftRow;
     try {
       await client.query('begin');
+      const recent = await client.query(
+        "select count(*)::int as n from live_gifts where sender_id=$1 and created_at > now() - interval '1 minute'",
+        [req.user.id]
+      );
+      if (recent.rows[0].n >= 10) {
+        await client.query('rollback');
+        return fail(res, 429, 'Please wait before sending another gift');
+      }
       const locked = await client.query('select id,coins from users where id = any($1::int[]) order by id for update', [[req.user.id,targetId]]);
       if (locked.rowCount !== 2) {
         await client.query('rollback');
