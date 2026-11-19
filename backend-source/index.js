@@ -12,6 +12,7 @@ const { setupCalls } = require('./calls');
 const { setupChat } = require('./chat');
 const { setupPush } = require('./push');
 const { setupPayments } = require('./payments');
+const { setupTelebirr } = require('./telebirr');
 const { setupTelegram } = require('./telegram');
 const { setupGrowth } = require('./growth');
 const { setupTranslate } = require('./translate');
@@ -559,6 +560,7 @@ const translator = setupTranslate(app, { auth });
 const telegram = setupTelegram(app, { pool, normalizePhone, PHONE, sha });
 const growth = setupGrowth(app, io, { pool, auth, changeCoins, normalizePhone, push });
 const payments = setupPayments(app, io, { pool, auth, changeCoins, normalizePhone, push });
+const telebirr = setupTelebirr(app, { pool, auth, changeCoins, io });
 const groups = setupGroups(app, io, { pool, auth, normalizePhone, push });
 const ads = setupAds(app, { pool, auth, changeCoins, adminOk: (req, res) => payments.adminOk(req, res) });
 const groupLive = setupGroupLive(app, io, { pool, auth });
@@ -566,6 +568,7 @@ const groupLive = setupGroupLive(app, io, { pool, auth });
 init()
   .then(() => push.init())
   .then(() => payments.init())
+  .then(() => telebirr.init())
   .then(() => growth.init())
   .then(() => telegram.init())
   .then(() => groups.init())
